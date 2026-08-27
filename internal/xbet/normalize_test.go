@@ -142,16 +142,20 @@ func TestNormalizeGameFlat(t *testing.T) {
 	}
 
 	scaled := d.Markets[4]
-	if scaled.Name != "Total" {
-		t.Fatalf("bad scaled total market: %+v", scaled)
+	if scaled.Name != "Goal Interval - Yes" {
+		t.Fatalf("bad group 12 name: got %q, want official dict name", scaled.Name)
 	}
-	if scaled.Outcomes[0].Name != "Over 0.5" {
-		t.Errorf("scaled line decode: got %q want Over 0.5 (P=1.015)", scaled.Outcomes[0].Name)
+	// official template for type 2951: "Team 1: ()-() Minutes", P=1.015 -> (1-15)
+	if scaled.Outcomes[0].Name != "Team 1: (1-15) Minutes" {
+		t.Errorf("goal interval render: got %q, want official template render", scaled.Outcomes[0].Name)
 	}
 
 	cs := d.Markets[5]
-	if cs.Name != "Correct Score" || cs.Outcomes[0].Name != "1:0" {
-		t.Errorf("bad correct score: %+v", cs.Outcomes)
+	if cs.Name != "HT-FT" {
+		t.Errorf("bad group 11 name: got %q, want HT-FT", cs.Name)
+	}
+	if cs.Outcomes[0].Name != "W1/W1" {
+		t.Errorf("bad ht-ft outcome: got %q, want W1/W1", cs.Outcomes[0].Name)
 	}
 }
 
@@ -229,5 +233,39 @@ func TestEnvErr(t *testing.T) {
 	legacy := apiEnvelope{Success: false, Error: json.RawMessage(`{"Code":5}`)}
 	if err := envErr(legacy); err == nil {
 		t.Error("want error for legacy error code")
+	}
+}
+
+func TestDictionaryRendering(t *testing.T) {
+	cases := []struct {
+		gid, tid int
+		param    float64
+		wantName string // market name
+		wantOut  string // outcome name
+	}{
+		{403, 1365, 1, "Win In Round", "W1 In Round (1)"},
+		{403, 1366, 3, "Win In Round", "W2 In Round (3)"},
+		{969, 1371, 0, "Method Of Victory", "W1 By KO, TKO, DQ Or Refusal"},
+		{1134, 2292, 0, "Fight To Go The Distance", "Yes"},
+		{1138, 2299, 2, "When Will Bout End", "In Round (2)"},
+		{8255, 2064, 1.003, "Win In Rounds Interval", "W1 In Round (1-3)"},
+		{10638, 14330, 2.5, "Bout Duration, Minutes", "Over (2.5) Minutes"},
+		{11, 15, 0, "HT-FT", "W1/W1"},
+		{12, 2951, 1.015, "Goal Interval - Yes", "Team 1: (1-15) Minutes"},
+		{2296, 2605, 0, "Method Of Win", "KO"},
+		{7077, 5713, 0, "Win Inside The Distance", "Yes"},
+		{7059, 5698, 0, "How The Bout Will Be Won", "Points Victory"},
+	}
+	for _, c := range cases {
+		if got := dictMarketName(c.gid); got != c.wantName {
+			t.Errorf("dictMarketName(%d) = %q, want %q", c.gid, got, c.wantName)
+		}
+		if got := dictOutcomeName(c.gid, c.tid, c.param); got != c.wantOut {
+			t.Errorf("dictOutcomeName(%d,%d,%v) = %q, want %q", c.gid, c.tid, c.param, got, c.wantOut)
+		}
+	}
+	// base groups fall back to the hardcoded map
+	if got := dictMarketName(1); got != "" {
+		t.Errorf("group 1 should not be in dict, got %q", got)
 	}
 }

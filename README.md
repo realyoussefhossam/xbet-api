@@ -145,11 +145,29 @@ live data (the current LINE feed only returns upcoming events).
 
 ## Market dictionary
 
-The flat odds format has no inline market names. `internal/xbet/normalize.go`
-ships a best-effort dictionary (Match Winner, Asian Handicap, Double Chance,
-Total, Correct Score, ...); unknown market ids appear as `Market N` with
-`Outcome T` labels. Extend `marketNames` / `outcomeLabel` as you identify
-new ids — `/debug/raw` gives you the raw `G`/`T` values to map.
+The flat odds format has no inline market names, but 1xbet publishes the
+**official market-group template dictionary** at
+`/genfiles/cms/betstemplates/bets_model_{short,full}_en_{chunk}.json`
+(discoverable via `bets_model_map_{short,full}_en.json`).
+
+This project embeds the merged dictionary (`internal/xbet/data/markets_en.json.gz`,
+4890 groups, ~15k outcome templates, gzip'd to 150KB) and renders official
+names: `Win In Round`, `Method Of Victory`, `Fight To Go The Distance`,
+`When Will Bout End`, `Bout Duration, Minutes`, etc. Outcome templates are
+rendered with the encoded parameter (e.g. `W1 In Round (1)`, `W1 In Round
+(1-3)`, `Team 1: (1-15) Minutes`).
+
+Base groups (1/2/8/15/17: Match Winner, Asian Handicap, Double Chance, ...)
+are app-builtins with no template; they use the hardcoded map in
+`internal/xbet/normalize.go`. Markets 1xbet itself doesn't template (e.g.
+group 8389) fall back to `Market N` / `Outcome T`.
+
+Regenerate the dictionary:
+
+```bash
+# fetch the chunk map + all chunks, merge short+full, gzip:
+python3 tools/build-dict.py
+```
 
 ## Tests
 

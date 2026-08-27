@@ -70,18 +70,16 @@ func normalizeEvent(e rawEvent) model.Event {
 	return ev
 }
 
-// marketNames is a best-effort dictionary of market ids (E[].G) seen in the
-// flat GetGameZip format. Extend as needed; unknown ids fall back to their
-// category name + id.
+// marketNames is a fallback dictionary for base market groups that have no
+// template in the official dictionary (groups 1,2,8,15,17 are app-builtins).
 var marketNames = map[int]string{
 	1:  "Match Winner",
 	2:  "Asian Handicap",
 	8:  "Double Chance",
-	11: "Correct Score",
-	12: "Total",
-	13: "Individual Total (Home)",
+	11: "HT-FT",
 	15: "Total Goals",
 	17: "Home Total",
+	62: "Both Teams To Score",
 }
 
 // outcomeLabels maps outcome type ids (E[].T) to base labels.
@@ -99,6 +97,10 @@ func outcomeLabel(t int, p float64) string {
 		return "12"
 	case 6:
 		return "X2"
+	case 13:
+		return "Yes"
+	case 14:
+		return "No"
 	case 7, 8:
 		return fmt.Sprintf("Handicap %+.1f", p)
 	case 9, 11:
@@ -196,7 +198,7 @@ func normalizeGameFlat(g rawGame) model.EventDetail {
 		outs := byMarket[gid]
 		market := model.Market{
 			ID:   int64(gid),
-			Name: marketNames[gid],
+			Name: firstNonEmpty(dictMarketName(gid), marketNames[gid]),
 		}
 		if market.Name == "" {
 			market.Name = fmt.Sprintf("Market %d", gid)
@@ -204,7 +206,7 @@ func normalizeGameFlat(g rawGame) model.EventDetail {
 		for _, o := range outs {
 			market.Outcomes = append(market.Outcomes, model.Outcome{
 				ID:   int64(o.T),
-				Name: outcomeLabel(int(o.T), float64(o.P)),
+				Name: firstNonEmpty(dictOutcomeName(gid, int(o.T), float64(o.P)), outcomeLabel(int(o.T), float64(o.P))),
 				Odds: float64(o.C),
 			})
 		}
