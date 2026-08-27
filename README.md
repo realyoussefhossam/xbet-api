@@ -158,6 +158,29 @@ REST snapshots catch locks active at request time only; real-time
 lock/unlock transitions flow through 1xbet's websocket push feed, which is
 not consumed by this API.
 
+### Lock event stream (SSE)
+
+1xbet's platform has **no websocket push** (verified across their core JS
+bundles) — live data is short-polled. The API therefore ships a lock-event
+**stream** built on safe polling: a watcher polls the v3 feed every 5s,
+diffs per-outcome lock state, and emits timestamped transitions:
+
+```bash
+# stream lock/unlock events (SSE):
+curl -N 'localhost:8080/live/lock-events'
+
+# watch full markets of specific games (polled every 5s while connected):
+curl -N 'localhost:8080/live/lock-events?game=747610378&game=747600716'
+
+# recent events as JSON (newest first):
+curl 'localhost:8080/live/lock-events/recent'
+```
+
+Each SSE message is `event: lock` / `event: unlock` with a JSON body
+(timestamp, event, market, outcome, odds, score). The watcher replays
+recent history on connect, forgets games that leave the live feed, and
+never demotes mirrors on HTTP rejections.
+
 ## Run
 
 ```bash

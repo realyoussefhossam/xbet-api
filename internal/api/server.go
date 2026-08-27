@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"xbet-api/internal/cache"
+	"xbet-api/internal/locks"
 	"xbet-api/internal/model"
 	"xbet-api/internal/xbet"
 )
@@ -37,12 +38,14 @@ type Server struct {
 	events    *cache.Cache
 	games     *cache.Cache
 	sports    []model.Sport
+	watcher   *locks.Watcher
 }
 
 // Options configures the API server.
 type Options struct {
 	Fetcher   Fetcher
 	Sports    []model.Sport
+	Watcher   *locks.Watcher // optional lock-event watcher
 	ChampsTTL time.Duration
 	EventsTTL time.Duration
 	GamesTTL  time.Duration
@@ -67,6 +70,7 @@ func New(opts Options) *Server {
 		events:    cache.New(opts.EventsTTL),
 		games:     cache.New(opts.GamesTTL),
 		sports:    opts.Sports,
+		watcher:   opts.Watcher,
 	}
 	return s
 }
@@ -79,6 +83,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /sports/{sport}/leagues", s.handleLeagues)
 	mux.HandleFunc("GET /sports/{sport}/events", s.handleEvents)
 	mux.HandleFunc("GET /live/events", s.handleLiveAll)
+	mux.HandleFunc("GET /live/lock-events", s.handleLockEvents)
+	mux.HandleFunc("GET /live/lock-events/recent", s.handleLockRecent)
 	mux.HandleFunc("GET /events/{id}/markets", s.handleMarkets)
 	mux.HandleFunc("GET /events/{id}/odds", s.handleOdds)
 	mux.HandleFunc("GET /debug/raw", s.handleRaw)
@@ -173,6 +179,83 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, v)
+}
+
+// handleLockEvents streams lock/unlock transitions as Server-Sent Events.
+// Optional repeated ?game=ID params watch full markets of specific games
+// while the connection is open.
+func (s *Server) handleLockEvents(w http.ResponseWriter, r *http.Request) {
+	if s.watcher == nil {
+		writeErr(w, http.StatusServiceUnavailable, fmt.Errorf("lock watcher not enabled"))
+		return
+	}
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		writeErr(w, http.StatusInternalServerError, fmt.Errorf("streaming unsupported"))
+		return
+	}
+
+	// watch requested games for the lifetime of this connection
+	var watched []int64
+	for _, g := range r.URL.Query()["game"] {
+		id, err := strconv.ParseInt(g, 10, 64)
+		if err != nil {
+			writeErr(w, http.StatusBadRequest, fmt.Errorf("invalid game: %q", g))
+			return
+		}
+		watched = append(watched, id)
+		s.watcher.Watch(id)
+	}
+	defer func() {
+		for _, id := range watched {
+			s.watcher.Unwatch(id)
+		}
+	}()
+
+	ch, cancel := s.watcher.Subscribe()
+	defer cancel()
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	// replay recent history so a fresh consumer sees the current state
+	for _, ev := range s.watcher.SortRecent() {
+		writeLockSSE(w, ev)
+	}
+	flusher.Flush()
+
+	ctx := r.Context()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case ev := <-ch:
+			writeLockSSE(w, ev)
+			flusher.Flush()
+		}
+	}
+}
+
+// handleLockRecent returns recent lock events as JSON (newest first).
+func (s *Server) handleLockRecent(w http.ResponseWriter, r *http.Request) {
+	if s.watcher == nil {
+		writeErr(w, http.StatusServiceUnavailable, fmt.Errorf("lock watcher not enabled"))
+		return
+	}
+	writeJSON(w, http.StatusOK, s.watcher.SortRecent())
+}
+
+func writeLockSSE(w http.ResponseWriter, ev locks.Event) {
+	data, err := json.Marshal(ev)
+	if err != nil {
+		return
+	}
+	event := "unlock"
+	if ev.Locked {
+		event = "lock"
+	}
+	fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event, data)
 }
 
 // handleLiveAll returns currently in-play events across all sports.

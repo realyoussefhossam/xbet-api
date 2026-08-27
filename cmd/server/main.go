@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"xbet-api/internal/api"
+	"xbet-api/internal/locks"
 	"xbet-api/internal/model"
 	"xbet-api/internal/xbet"
 )
@@ -93,6 +94,14 @@ func main() {
 		Timeout: 15 * time.Second,
 	})
 
+	// lock-event watcher: polls live feeds at a safe interval and emits
+	// lock/unlock transitions (1xbet has no websocket push; the v3 feed is
+	// short-polled by design)
+	lockCtx, lockCancel := context.WithCancel(context.Background())
+	defer lockCancel()
+	watcher := locks.New(client, 5*time.Second)
+	go watcher.Start(lockCtx)
+
 	// background: re-probe demoted mirrors every 60s
 	probeCtx, probeCancel := context.WithCancel(context.Background())
 	defer probeCancel()
@@ -108,8 +117,12 @@ func main() {
 	}()
 
 	srv := &http.Server{
-		Addr:              *addr,
-		Handler:           api.New(api.Options{Fetcher: client, Sports: curatedSports}).Handler(),
+		Addr: *addr,
+		Handler: api.New(api.Options{
+			Fetcher: client,
+			Sports:  curatedSports,
+			Watcher: watcher,
+		}).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
