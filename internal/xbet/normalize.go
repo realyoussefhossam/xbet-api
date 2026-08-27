@@ -216,7 +216,7 @@ func buildMarkets(E []rawFlatOutcome) []model.Market {
 				ID:     int64(o.T),
 				Name:   firstNonEmpty(dictOutcomeName(gid, int(o.T), float64(o.P)), outcomeLabel(int(o.T), float64(o.P))),
 				Odds:   float64(o.C),
-				Locked: o.Block != 0,
+				Locked: o.Block != 0 || o.Blocked,
 			}
 			if out.Locked {
 				market.Locked = true
@@ -235,11 +235,11 @@ func liveOutcomes(groups []rawLiveGroup) []rawFlatOutcome {
 		for _, list := range g.Events {
 			for _, o := range list {
 				out = append(out, rawFlatOutcome{
-					T:     o.Type,
-					P:     o.Parameter,
-					C:     o.CF,
-					G:     g.GroupID,
-					Block: o.Block,
+					T:       o.Type,
+					P:       o.Parameter,
+					C:       o.CF,
+					G:       g.GroupID,
+					Blocked: o.Blocked,
 				})
 			}
 		}

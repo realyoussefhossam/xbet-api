@@ -157,13 +157,14 @@ type rawWP struct {
 
 // rawFlatOutcome is one outcome of the flat game odds list (GetGameZip E).
 type rawFlatOutcome struct {
-	T     FlexInt   `json:"T"` // outcome type id
-	P     FlexFloat `json:"P"` // parameter (handicap line / total)
-	C     FlexFloat `json:"C"` // decimal odds
-	CV    string    `json:"CV"`
-	G     FlexInt   `json:"G"` // market (group) id
-	CE    FlexInt   `json:"CE"`
-	Block FlexInt   `json:"Block"` // 1 = betting locked (present only when locked)
+	T       FlexInt   `json:"T"` // outcome type id
+	P       FlexFloat `json:"P"` // parameter (handicap line / total)
+	C       FlexFloat `json:"C"` // decimal odds
+	CV      string    `json:"CV"`
+	G       FlexInt   `json:"G"` // market (group) id
+	CE      FlexInt   `json:"CE"`
+	Block   FlexInt   `json:"Block"`   // 1 = betting locked (line payloads)
+	Blocked bool      `json:"blocked"` // true = betting locked (live payloads)
 }
 
 // rawMEC is a market category entry.
@@ -300,7 +301,7 @@ type rawLiveOutcome struct {
 	Type      FlexInt   `json:"type"`
 	CF        FlexFloat `json:"cf"`
 	Parameter FlexFloat `json:"parameter"`
-	Block     FlexInt   `json:"Block"` // 1 = betting locked (present only when locked)
+	Blocked   bool      `json:"blocked"` // betting locked (present only when locked)
 }
 
 // rawLiveGameEvents is the response of gameEvents for a live game.

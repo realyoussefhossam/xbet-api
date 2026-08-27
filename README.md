@@ -128,6 +128,8 @@ Notes from reverse-engineering:
 - The v3 gateway is **query-order sensitive**: `cfView` leads, `gr` must sit
   between `fcountry` and `grMode` — any other arrangement returns 400.
 - The v3 endpoints are absolute paths (not under `LineFeed/`).
+- The v3 feed is rate-limited aggressively; keep the mirror list small (the
+  client only demotes mirrors on transport failures, never on HTTP rejections).
 
 ```bash
 # every live event right now:
@@ -139,6 +141,22 @@ curl 'localhost:8080/sports/1/events?status=live'
 # markets of a live game (auto-falls back from line GetGameZip to live feed):
 curl 'localhost:8080/events/747600716/markets'
 ```
+
+### Locks (betting suspension)
+
+Live markets **lock** when a goal/point/wicket happens or odds update. 1xbet
+sends the state as optional fields that appear in payloads **only while
+locked**: `blocked: true` on live outcomes (v3 gameEvents), `blocked` on
+live game objects, and `Block: 1` on line (GetGameZip) outcomes. The API
+surfaces them as `locked` on events, markets, and outcomes:
+
+```json
+{"name": "(69) Points Or More - Yes", "odds": 1.01, "locked": true}
+```
+
+REST snapshots catch locks active at request time only; real-time
+lock/unlock transitions flow through 1xbet's websocket push feed, which is
+not consumed by this API.
 
 ## Run
 

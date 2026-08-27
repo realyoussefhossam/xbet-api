@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -375,6 +376,7 @@ func (c *Client) GetLiveGame(ctx context.Context, gameID int64) (model.EventDeta
 func (c *Client) doV3(ctx context.Context, ep string, q orderedQuery, grIndex int) ([]byte, error) {
 	var lastErr error
 	for _, host := range c.pool.Hosts() {
+		hostOK := false
 		for _, gr := range liveGrCandidates {
 			q2 := insertKV(q, grIndex, kv{"gr", fmt.Sprint(gr)})
 			body, err := c.doHost(ctx, host, ep, q2)
@@ -383,8 +385,14 @@ func (c *Client) doV3(ctx context.Context, ep string, q orderedQuery, grIndex in
 				return body, nil
 			}
 			lastErr = err
+			var hse *httpStatusError
+			if !errors.As(err, &hse) {
+				hostOK = true // transport failure -> candidate for demotion
+			}
 		}
-		c.pool.ReportFailure(host)
+		if !hostOK {
+			c.pool.ReportFailure(host)
+		}
 	}
 	return nil, fmt.Errorf("all mirrors failed for %s: %w", ep, lastErr)
 }
@@ -442,6 +450,14 @@ func (c *Client) doJSON(ctx context.Context, ep string, q orderedQuery, v any) e
 	return nil
 }
 
+// httpStatusError marks an HTTP-level rejection (4xx/5xx) as opposed to a
+// transport failure. Hosts are only demoted on transport failures: an HTTP
+// rejection (e.g. a rate-limit blip or a wrong gr) says nothing about host
+// health, and demoting on it poisons the pool during blips.
+type httpStatusError struct{ status int }
+
+func (e *httpStatusError) Error() string { return fmt.Sprintf("http %d", e.status) }
+
 // do performs a GET across the mirror pool until one succeeds.
 func (c *Client) do(ctx context.Context, ep string, q orderedQuery) ([]byte, error) {
 	var lastErr error
@@ -452,7 +468,10 @@ func (c *Client) do(ctx context.Context, ep string, q orderedQuery) ([]byte, err
 			return body, nil
 		}
 		lastErr = err
-		c.pool.ReportFailure(host)
+		var hse *httpStatusError
+		if !errors.As(err, &hse) {
+			c.pool.ReportFailure(host)
+		}
 	}
 	return nil, fmt.Errorf("all mirrors failed for %s: %w", ep, lastErr)
 }
@@ -497,7 +516,7 @@ func (c *Client) doHost(ctx context.Context, host, ep string, q orderedQuery) ([
 
 	if resp.StatusCode != http.StatusOK {
 		io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
-		return nil, fmt.Errorf("%s: http %d", host, resp.StatusCode)
+		return nil, fmt.Errorf("%s: %w", host, &httpStatusError{status: resp.StatusCode})
 	}
 
 	body, err := io.ReadAll(resp.Body)
