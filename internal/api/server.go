@@ -125,6 +125,22 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 		}
 		params.Count = n
 	}
+	if f := q.Get("from"); f != "" {
+		n, err := strconv.ParseInt(f, 10, 64)
+		if err != nil {
+			writeErr(w, http.StatusBadRequest, fmt.Errorf("invalid from: %q (unix seconds)", f))
+			return
+		}
+		params.From = n
+	}
+	if t := q.Get("to"); t != "" {
+		n, err := strconv.ParseInt(t, 10, 64)
+		if err != nil {
+			writeErr(w, http.StatusBadRequest, fmt.Errorf("invalid to: %q (unix seconds)", t))
+			return
+		}
+		params.To = n
+	}
 	switch q.Get("status") {
 	case "", "prematch":
 	case "live":
@@ -136,7 +152,7 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := fmt.Sprintf("events:%d:%s:%d:%t", sportID, params.Champs, params.Count, params.Live)
+	key := fmt.Sprintf("events:%d:%s:%d:%t:%d:%d", sportID, params.Champs, params.Count, params.Live, params.From, params.To)
 	v, err := s.events.GetOrLoad(key, func() (any, error) {
 		return s.fetcher.GetEvents(r.Context(), sportID, params)
 	})

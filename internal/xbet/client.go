@@ -164,6 +164,8 @@ type EventsParams struct {
 	Champs string // comma-separated league ids; empty = all
 	Count  int    // max events; default 50
 	Live   bool   // unused on the new gateway (LINE feed); kept for API compat
+	From   int64  // unix ts: earliest start (tsFrom)
+	To     int64  // unix ts: latest start (tsTo)
 }
 
 // GetEvents returns feed events (line/prematch) for a sport.
@@ -182,6 +184,12 @@ func (c *Client) GetEvents(ctx context.Context, sportID int, p EventsParams) ([]
 	}
 	if p.Champs != "" {
 		q = append(q, kv{"champs", p.Champs})
+	}
+	if p.From > 0 {
+		q = append(q, kv{"tsFrom", fmt.Sprint(p.From)})
+	}
+	if p.To > 0 {
+		q = append(q, kv{"tsTo", fmt.Sprint(p.To)})
 	}
 	var env apiEnvelope
 	if err := c.doJSON(ctx, "Get1x2_Zip", q, &env); err != nil {

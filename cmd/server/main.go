@@ -23,6 +23,7 @@ import (
 // the -mirrors flag.
 var defaultMirrors = []string{
 	"1xbet.ng", "1xbet.co.ke", "1xbet.ci", "1xbet.ug",
+	"1xlite-11151.pro",
 	"1xbet.com",
 	"ua.1xbet.com", "de.1xbet.com", "ge.1xbet.com", "in.1xbet.com",
 	"my.1xbet.com", "nl.1xbet.com", "br.1xbet.com", "th.1xbet.com",
@@ -81,8 +82,9 @@ var curatedSports = []model.Sport{
 	{ID: 44, Name: "Horse Racing"},
 	{ID: 48, Name: "Lacrosse"},
 	{ID: 53, Name: "Wrestling"},
-	{ID: 56, Name: "Martial Arts (MMA/UFC)"},
+	{ID: 56, Name: "Martial Arts (MMA orgs: ONE, KSW, ...)"},
 	{ID: 80, Name: "Gaelic Football"},
+	{ID: 189, Name: "UFC"},
 }
 
 func main() {

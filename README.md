@@ -57,9 +57,12 @@ clean model. All endpoints were verified against the live gateway.
 
 ### Query params
 
-- `/sports/{sport}/events?count=50&league=ID`
+- `/sports/{sport}/events?count=50&league=ID&from=UNIX&to=UNIX`
   - `count` — max events (default 50)
   - `league` — comma-separated league ids (passed as `champs`)
+  - `from` / `to` — unix timestamps filtering event start time (`tsFrom`/`tsTo`);
+    the upstream feed caps at ~50 events and sorts by start time, so windowing
+    is the way to reach events further out (e.g. a fight card 2 weeks ahead)
 
 ### Sport ids (live-verified)
 
@@ -69,8 +72,9 @@ clean model. All endpoints were verified against the live gateway.
 `16` Badminton · `18` Motorsport · `20` TV Games · `21` Darts ·
 `26` Formula 1 · `27` Field Hockey · `28` Australian Rules · `30` Snooker ·
 `36` Bicycle Racing · `40` Esports · `41` Golf · `44` Horse Racing ·
-`48` Lacrosse · `53` Wrestling · **`56` Martial Arts (UFC/MMA orgs)** ·
-`80` Gaelic Football
+`48` Lacrosse · `53` Wrestling · `56` Martial Arts (MMA orgs: ONE, KSW, ...) ·
+`80` Gaelic Football · **`189` UFC** (Fight Night cards, UFC 331/332/333, Road to UFC,
+Prospective fights)
 
 ### Example responses
 
