@@ -349,3 +349,46 @@ func TestNormalizeLockedMarkets(t *testing.T) {
 		t.Error("outcome should be locked (Block=1)")
 	}
 }
+
+// TestLineLockFieldB: line (GetGameZip) outcomes carry the lock flag as
+// "B": true — verified against Carlos Jamil De Leon Castro vs Maxwel Montez,
+// where Double Chance 1X (T=4) and 12 (T=5) are locked at 1.001.
+func TestLineLockFieldB(t *testing.T) {
+	var env apiEnvelope
+	if err := json.Unmarshal(loadFixture(t, "game-locked-b.json"), &env); err != nil {
+		t.Fatal(err)
+	}
+	var g rawGame
+	if err := json.Unmarshal(env.Value, &g); err != nil {
+		t.Fatal(err)
+	}
+	d := normalizeGameFlat(g)
+	var dc *model.Market
+	for i := range d.Markets {
+		if d.Markets[i].ID == 8 {
+			dc = &d.Markets[i]
+		}
+	}
+	if dc == nil {
+		t.Fatal("double chance market (G=8) not found")
+	}
+	if len(dc.Outcomes) != 3 {
+		t.Fatalf("want 3 outcomes, got %d", len(dc.Outcomes))
+	}
+	want := []struct {
+		id     int64
+		locked bool
+		odds   float64
+	}{
+		{4, true, 1.001}, // 1X locked
+		{5, true, 1.001}, // 12 locked
+		{6, false, 8.15}, // X2 open
+	}
+	for i, w := range want {
+		o := dc.Outcomes[i]
+		if o.ID != w.id || o.Locked != w.locked || o.Odds != w.odds {
+			t.Errorf("outcome %d: got id=%d locked=%v odds=%v, want id=%d locked=%v odds=%v",
+				i, o.ID, o.Locked, o.Odds, w.id, w.locked, w.odds)
+		}
+	}
+}

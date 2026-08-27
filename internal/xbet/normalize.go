@@ -216,7 +216,7 @@ func buildMarkets(E []rawFlatOutcome) []model.Market {
 				ID:     int64(o.T),
 				Name:   firstNonEmpty(dictOutcomeName(gid, int(o.T), float64(o.P)), outcomeLabel(int(o.T), float64(o.P))),
 				Odds:   float64(o.C),
-				Locked: o.Block != 0 || o.Blocked,
+				Locked: o.B || o.Block != 0 || o.Blocked,
 			}
 			if out.Locked {
 				market.Locked = true

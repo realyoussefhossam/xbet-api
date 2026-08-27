@@ -163,7 +163,8 @@ type rawFlatOutcome struct {
 	CV      string    `json:"CV"`
 	G       FlexInt   `json:"G"` // market (group) id
 	CE      FlexInt   `json:"CE"`
-	Block   FlexInt   `json:"Block"`   // 1 = betting locked (line payloads)
+	B       bool      `json:"B"`       // true = betting locked (line GetGameZip)
+	Block   FlexInt   `json:"Block"`   // legacy lock marker
 	Blocked bool      `json:"blocked"` // true = betting locked (live payloads)
 }
 
