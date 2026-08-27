@@ -163,9 +163,39 @@ type rawFlatOutcome struct {
 	CV      string    `json:"CV"`
 	G       FlexInt   `json:"G"` // market (group) id
 	CE      FlexInt   `json:"CE"`
+	PL      *rawPL    `json:"PL"`      // pre-built label (event specials combos)
 	B       bool      `json:"B"`       // true = betting locked (line GetGameZip)
 	Block   FlexInt   `json:"Block"`   // legacy lock marker
 	Blocked bool      `json:"blocked"` // true = betting locked (live payloads)
+}
+
+// rawPL is a pre-built outcome label (e.g. "Chantelle Cameron to Win in
+// Round 10 & Mikaela Mayer to be Knocked Down in Round 9").
+type rawPL struct {
+	N string  `json:"N"`
+	I FlexInt `json:"I"`
+}
+
+// rawGroupedMarket is one market group of the grouped (GE) game format.
+type rawGroupedMarket struct {
+	G  FlexInt            `json:"G"`
+	GS FlexInt            `json:"GS"`
+	E  [][]rawFlatOutcome `json:"E"`
+}
+
+// rawSubGame is an attached sub-game (SG) of a game.
+type rawSubGame struct {
+	I   FlexInt `json:"I"`
+	N   FlexInt `json:"N"`
+	TG  string  `json:"TG"`
+	PN  string  `json:"PN"` // period name for period variants
+	EC  FlexInt `json:"EC"`
+	O1E string  `json:"O1E"`
+	O1  string  `json:"O1"`
+	O2E string  `json:"O2E"`
+	O2  string  `json:"O2"`
+	L   string  `json:"L"`
+	SI  FlexInt `json:"SI"`
 }
 
 // rawMEC is a market category entry.
@@ -177,43 +207,45 @@ type rawMEC struct {
 
 // rawGame is the Value of GetGameZip (new flat format).
 type rawGame struct {
-	B     FlexInt          `json:"B"`
-	I     FlexInt          `json:"I"` // event id
-	SI    FlexInt          `json:"SI"`
-	SN    string           `json:"SN"`
-	SR    string           `json:"SR"`
-	SE    string           `json:"SE"`
-	L     string           `json:"L"` // league
-	LR    string           `json:"LR"`
-	LE    string           `json:"LE"`
-	LI    FlexInt          `json:"LI"`
-	CN    string           `json:"CN"`
-	COI   FlexInt          `json:"COI"`
-	T     FlexInt          `json:"T"`
-	S     FlexInt          `json:"S"` // start time
-	SS    FlexInt          `json:"SS"`
-	SST   FlexInt          `json:"SST"`
-	O1    string           `json:"O1"`
-	O2    string           `json:"O2"`
-	O1E   string           `json:"O1E"`
-	O2E   string           `json:"O2E"`
-	O1R   string           `json:"O1R"`
-	O2R   string           `json:"O2R"`
-	HS    FlexInt          `json:"HS"` // home score
-	GS    FlexInt          `json:"GS"` // away score (if present)
-	G1    FlexInt          `json:"G1"` // legacy score keys
-	G2    FlexInt          `json:"G2"`
-	MIS   []any            `json:"MIS"`
-	MIO   any              `json:"MIO"`
-	E     []rawFlatOutcome `json:"E"`   // flat outcomes
-	MEC   []rawMEC         `json:"MEC"` // market categories
-	SmI   FlexInt          `json:"SmI"`
-	MS    []int            `json:"MS"`
-	KI    FlexInt          `json:"KI"`
-	MEC2  any              `json:"MEC2"`
-	HHTHS bool             `json:"HHTHS"`
-	GLI   FlexInt          `json:"GLI"`
-	SUBA  bool             `json:"SUBA"`
+	B     FlexInt            `json:"B"`
+	I     FlexInt            `json:"I"` // event id
+	SI    FlexInt            `json:"SI"`
+	SN    string             `json:"SN"`
+	SR    string             `json:"SR"`
+	SE    string             `json:"SE"`
+	L     string             `json:"L"` // league
+	LR    string             `json:"LR"`
+	LE    string             `json:"LE"`
+	LI    FlexInt            `json:"LI"`
+	CN    string             `json:"CN"`
+	COI   FlexInt            `json:"COI"`
+	T     FlexInt            `json:"T"`
+	S     FlexInt            `json:"S"` // start time
+	SS    FlexInt            `json:"SS"`
+	SST   FlexInt            `json:"SST"`
+	O1    string             `json:"O1"`
+	O2    string             `json:"O2"`
+	O1E   string             `json:"O1E"`
+	O2E   string             `json:"O2E"`
+	O1R   string             `json:"O1R"`
+	O2R   string             `json:"O2R"`
+	HS    FlexInt            `json:"HS"` // home score
+	GS    FlexInt            `json:"GS"` // away score (if present)
+	G1    FlexInt            `json:"G1"` // legacy score keys
+	G2    FlexInt            `json:"G2"`
+	MIS   []any              `json:"MIS"`
+	MIO   any                `json:"MIO"`
+	E     []rawFlatOutcome   `json:"E"`   // flat outcomes
+	GE    []rawGroupedMarket `json:"GE"`  // grouped outcomes (frontend-style call)
+	SG    []rawSubGame       `json:"SG"`  // attached sub-games (special bets etc.)
+	MEC   []rawMEC           `json:"MEC"` // market categories
+	SmI   FlexInt            `json:"SmI"`
+	MS    []int              `json:"MS"`
+	KI    FlexInt            `json:"KI"`
+	MEC2  any                `json:"MEC2"`
+	HHTHS bool               `json:"HHTHS"`
+	GLI   FlexInt            `json:"GLI"`
+	SUBA  bool               `json:"SUBA"`
 }
 
 // legacyGame is the Value of GetGameZip on the legacy 1xbet.com API

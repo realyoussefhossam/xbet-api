@@ -281,15 +281,36 @@ func (c *Client) GetEvents(ctx context.Context, sportID int, p EventsParams) ([]
 	return out, nil
 }
 
-// GetGame returns a full event: all markets and odds.
+// GetGame returns a full event: all markets and odds, plus attached
+// sub-games (special bets, knockdowns, ...). Uses the frontend's param set
+// (isSubGames=true) so sub-games come back in SG; falls back to the minimal
+// call on older gateways.
 func (c *Client) GetGame(ctx context.Context, eventID int64) (model.EventDetail, error) {
 	q := orderedQuery{
 		{"id", fmt.Sprint(eventID)},
 		{"lng", c.lng},
-		{"partner", fmt.Sprint(c.partner)},
+		{"isSubGames", "true"},
+		{"GroupEvents", "true"},
+		{"countevents", "2000"},
+		{"grMode", "4"},
+		{"topGroups", ""},
+		{"country", "66"},
+		{"marketType", "1"},
+		{"isNewBuilder", "true"},
 	}
 	var env apiEnvelope
-	if err := c.doJSON(ctx, "GetGameZip", q, &env); err != nil {
+	err := c.doJSON(ctx, "GetGameZip", q, &env)
+	if err != nil {
+		// older gateway: minimal params
+		q2 := orderedQuery{
+			{"id", fmt.Sprint(eventID)},
+			{"lng", c.lng},
+			{"partner", fmt.Sprint(c.partner)},
+		}
+		env = apiEnvelope{}
+		err = c.doJSON(ctx, "GetGameZip", q2, &env)
+	}
+	if err != nil {
 		return model.EventDetail{}, err
 	}
 	if err := envErr(env); err != nil {

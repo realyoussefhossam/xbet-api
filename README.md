@@ -53,6 +53,7 @@ clean model. All endpoints were verified against the live gateway.
 | GET | `/sports/{sport}/events` | events for a sport (`status=live` = in-play) |
 | GET | `/live/events?count=40` | **all in-play events across every sport** (scores + main odds) |
 | GET | `/events/{id}/markets` | full event: all markets + all odds (line **or live**) |
+| GET | `/events/{id}/subgames` | attached sub-games ("Special bets", "Knockdowns") — each fetchable via `/events/{subgame-id}/markets` |
 | GET | `/events/{id}/odds` | main 1X2 odds snapshot (from markets) |
 | GET | `/debug/raw?path=GetGameZip&id=...` | raw 1xbet JSON passthrough (for verifying mappings) |
 
@@ -141,6 +142,27 @@ curl 'localhost:8080/sports/1/events?status=live'
 # markets of a live game (auto-falls back from line GetGameZip to live feed):
 curl 'localhost:8080/events/747600716/markets'
 ```
+
+### Sub-games & event specials
+
+Fights carry attached **sub-games** (the site's "Event. Special bets" tab) with
+pre-built combo markets. They appear only in the frontend-style `GetGameZip`
+call (`isSubGames=true&GroupEvents=true&...`), which the client now uses
+(with fallback to the minimal call on older gateways):
+
+```bash
+# sub-games of a fight (ids + names + outcome counts):
+curl 'localhost:8080/events/341046046/subgames'
+# -> Special bets (117 outcomes), Knockdowns (14 outcomes)
+
+# the specials themselves, with full combo names:
+curl 'localhost:8080/events/747442125/markets'
+# -> "Chantelle Cameron to Win in Round 10 & Mikaela Mayer to be
+#    Knocked Down in Round 9 - Yes @ 90"
+```
+
+Combo names come from the outcome's `PL` (pre-built label) field, rendered
+with the template suffix (`[] - Yes` -> "... - Yes").
 
 ### Locks (betting suspension)
 

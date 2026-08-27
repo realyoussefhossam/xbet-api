@@ -392,3 +392,64 @@ func TestLineLockFieldB(t *testing.T) {
 		}
 	}
 }
+
+// TestSubGamesAndPL: frontend-style GetGameZip returns grouped markets (GE),
+// attached sub-games (SG) and pre-built labels (PL) for event specials.
+// Verified against Chantelle Cameron vs Mikaela Mayer (Special bets sub-game
+// 747442125: 117 combo outcomes).
+func TestSubGamesAndPL(t *testing.T) {
+	var env apiEnvelope
+	if err := json.Unmarshal(loadFixture(t, "game-subgames.json"), &env); err != nil {
+		t.Fatal(err)
+	}
+	var g rawGame
+	if err := json.Unmarshal(env.Value, &g); err != nil {
+		t.Fatal(err)
+	}
+	if len(g.GE) == 0 {
+		t.Fatal("want grouped markets (GE)")
+	}
+	d := normalizeGameFlat(g)
+	// 12 markets from GE (incl. 1X2, totals...)
+	if len(d.Markets) == 0 {
+		t.Fatal("want markets from GE")
+	}
+	if len(d.SubGames) < 2 {
+		t.Fatalf("want sub-games, got %d: %+v", len(d.SubGames), d.SubGames)
+	}
+	names := map[string]bool{}
+	for _, sg := range d.SubGames {
+		names[sg.Name] = true
+	}
+	if !names["Special bets"] || !names["Knockdowns"] {
+		t.Fatalf("want Special bets + Knockdowns sub-games, got %v", d.SubGames)
+	}
+}
+
+// TestPLOutcomeNames: the Special bets sub-game outcomes carry pre-built
+// labels (PL.N) that must win over template rendering.
+func TestPLOutcomeNames(t *testing.T) {
+	var env apiEnvelope
+	if err := json.Unmarshal(loadFixture(t, "game-subgames.json"), &env); err != nil {
+		t.Fatal(err)
+	}
+	var g rawGame
+	if err := json.Unmarshal(env.Value, &g); err != nil {
+		t.Fatal(err)
+	}
+	// GE contains the specials? no - specials live in the sub-game payload.
+	// Simulate: outcome with PL label.
+	o := rawFlatOutcome{
+		T:  1893,
+		G:  9242,
+		PL: &rawPL{N: "Chantelle Cameron to Win in Round 10 & Mikaela Mayer to be Knocked Down in Round 9"},
+	}
+	if got := outcomeName(9242, o); got != "Chantelle Cameron to Win in Round 10 & Mikaela Mayer to be Knocked Down in Round 9 - Yes" {
+		t.Errorf("PL label not used: %q", got)
+	}
+	// template suffix: "[] - Yes" + PL -> "label - Yes"
+	o2 := rawFlatOutcome{T: 1893, G: 9242, PL: &rawPL{N: "Both Fighters to be Knocked Down 2+ Times Each"}}
+	if got := renderPLLabel(dictOutcomeTemplate(9242, 1893), o2.PL.N); got != "Both Fighters to be Knocked Down 2+ Times Each - Yes" {
+		t.Errorf("PL template render: %q", got)
+	}
+}

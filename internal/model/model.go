@@ -69,8 +69,21 @@ type Market struct {
 	Outcomes []Outcome `json:"outcomes"`
 }
 
+// SubGame is an attached game (e.g. "Special bets", "Knockdowns") whose
+// markets live under its own game id, fetchable via /events/{id}/markets.
+type SubGame struct {
+	ID           int64  `json:"id"`
+	Name         string `json:"name"`
+	OutcomeCount int    `json:"outcome_count,omitempty"`
+	Home         string `json:"home,omitempty"`
+	Away         string `json:"away,omitempty"`
+	League       string `json:"league,omitempty"`
+	SportID      int    `json:"sport_id,omitempty"`
+}
+
 // EventDetail is a full event including all markets and odds.
 type EventDetail struct {
 	Event
-	Markets []Market `json:"markets"`
+	Markets  []Market  `json:"markets"`
+	SubGames []SubGame `json:"sub_games,omitempty"`
 }

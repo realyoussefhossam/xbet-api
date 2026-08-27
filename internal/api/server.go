@@ -86,6 +86,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /live/lock-events", s.handleLockEvents)
 	mux.HandleFunc("GET /live/lock-events/recent", s.handleLockRecent)
 	mux.HandleFunc("GET /events/{id}/markets", s.handleMarkets)
+	mux.HandleFunc("GET /events/{id}/subgames", s.handleSubGames)
 	mux.HandleFunc("GET /events/{id}/odds", s.handleOdds)
 	mux.HandleFunc("GET /debug/raw", s.handleRaw)
 	return logMiddleware(mux)
@@ -277,6 +278,23 @@ func (s *Server) handleLiveAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, v)
+}
+
+// handleSubGames returns the attached sub-games of an event (e.g. "Special
+// bets", "Knockdowns"). Each sub-game's markets are fetchable via
+// /events/{subgame-id}/markets.
+func (s *Server) handleSubGames(w http.ResponseWriter, r *http.Request) {
+	id, err := pathInt64(r, "id")
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+	detail, err := s.game(r, id)
+	if err != nil {
+		writeErr(w, http.StatusBadGateway, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, detail.SubGames)
 }
 
 func (s *Server) handleMarkets(w http.ResponseWriter, r *http.Request) {

@@ -182,8 +182,30 @@ func normalizeGameFlat(g rawGame) model.EventDetail {
 	// MT ids are not the same as the market ids (E[].G), so we cannot map them
 	// reliably without the frontend's private dictionary. Leave group empty.
 
+	outcomes := g.E
+	if len(g.GE) > 0 {
+		outcomes = groupedOutcomes(g.GE)
+	}
 	detail := model.EventDetail{Event: ev}
-	detail.Markets = buildMarkets(g.E)
+	detail.Markets = buildMarkets(outcomes)
+	for _, sg := range g.SG {
+		name := sg.TG
+		if name == "" {
+			name = sg.PN // period variant (e.g. "1st half")
+		}
+		if name == "" {
+			name = fmt.Sprintf("Sub-game %d", sg.I)
+		}
+		detail.SubGames = append(detail.SubGames, model.SubGame{
+			ID:           int64(sg.I),
+			Name:         name,
+			OutcomeCount: int(sg.EC),
+			Home:         firstNonEmpty(sg.O1E, sg.O1),
+			Away:         firstNonEmpty(sg.O2E, sg.O2),
+			League:       sg.L,
+			SportID:      int(sg.SI),
+		})
+	}
 	return detail
 }
 
@@ -212,9 +234,10 @@ func buildMarkets(E []rawFlatOutcome) []model.Market {
 			market.Name = fmt.Sprintf("Market %d", gid)
 		}
 		for _, o := range outs {
+			name := outcomeName(gid, o)
 			out := model.Outcome{
 				ID:     int64(o.T),
-				Name:   firstNonEmpty(dictOutcomeName(gid, int(o.T), float64(o.P)), outcomeLabel(int(o.T), float64(o.P))),
+				Name:   name,
 				Odds:   float64(o.C),
 				Locked: o.B || o.Block != 0 || o.Blocked,
 			}
@@ -226,6 +249,56 @@ func buildMarkets(E []rawFlatOutcome) []model.Market {
 		markets = append(markets, market)
 	}
 	return markets
+}
+
+// outcomeName resolves an outcome's display name. Pre-built labels (PL)
+// win when present (event specials combos); otherwise the official
+// template renders with the parameter; last resort is the base labeler.
+func outcomeName(gid int, o rawFlatOutcome) string {
+	if o.PL != nil && o.PL.N != "" {
+		return renderPLLabel(dictOutcomeTemplate(gid, int(o.T)), o.PL.N)
+	}
+	return firstNonEmpty(dictOutcomeName(gid, int(o.T), float64(o.P)), outcomeLabel(int(o.T), float64(o.P)))
+}
+
+// renderPLLabel fills a pre-built label into its template: "[] - Yes"
+// becomes "Both Fighters to be Knocked Down 2+ Times Each - Yes".
+func renderPLLabel(tpl string, label string) string {
+	if tpl == "" || !containsStr(tpl, "[]") {
+		return label
+	}
+	return replaceOnce(tpl, "[]", label)
+}
+
+// dictOutcomeTemplate returns the raw name template for (group, type).
+func dictOutcomeTemplate(gid, tid int) string {
+	d, err := loadDict()
+	if err != nil || d == nil {
+		return ""
+	}
+	g, ok := d[fmt.Sprint(gid)]
+	if !ok {
+		return ""
+	}
+	t, ok := g.Markets[fmt.Sprint(tid)]
+	if !ok {
+		return ""
+	}
+	return t.N
+}
+
+// groupedOutcomes flattens the grouped (GE) market format.
+func groupedOutcomes(groups []rawGroupedMarket) []rawFlatOutcome {
+	var out []rawFlatOutcome
+	for _, g := range groups {
+		for _, list := range g.E {
+			for _, o := range list {
+				o.G = g.G
+				out = append(out, o)
+			}
+		}
+	}
+	return out
 }
 
 // liveOutcomes converts live eventGroups to the flat outcome form.
