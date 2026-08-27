@@ -177,6 +177,7 @@ func (c *Client) GetAllEvents(ctx context.Context, sportID int, p EventsParams, 
 	if maxDays <= 0 {
 		maxDays = 180
 	}
+	p.Count = 50 // completeness requires the max per-request window
 	now := time.Now().Unix()
 	var out []model.Event
 	if err := c.collectEvents(ctx, sportID, p, now, now+int64(maxDays)*86400, &out); err != nil {
