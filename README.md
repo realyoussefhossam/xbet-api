@@ -1,0 +1,175 @@
+# xbet-api
+
+REST API that wraps 1xbet's internal LineFeed JSON endpoints and exposes
+clean, normalized sports data: **events**, **markets**, and **odds**.
+
+Built with the Go standard library only. No external dependencies.
+
+## How it works
+
+1xbet has no public API. This service reverse-engineers the internal JSON
+endpoints their own website uses and normalizes the cryptic payloads into a
+clean model. All endpoints were verified against the live gateway.
+
+**Upstream endpoints used:**
+
+| Endpoint | Purpose |
+|---|---|
+| `GetChampsZip?sport=N&lng=en&partner=159` | leagues for a sport |
+| `Get1x2_Zip?sports=N&count=K&lng=en&partner=159&getEmpty=true&gr=412&mode=3` | events (line/prematch) with team names, times |
+| `GetGameZip?id=EVENT&lng=en&partner=159` | full event: all markets + odds |
+
+**Reverse-engineering findings (things that will save you hours):**
+
+- The new gateway lives at `/service-api/LineFeed/` on the regional domains
+  (`1xbet.ng`, `1xbet.co.ke`, `1xbet.ci`, `1xbet.ug`). The old `/LineFeed/`
+  path also exists on some hosts.
+- Responses use the envelope `{"Id":0,"Success":true,"Error":"","Value":...}`.
+- **`partner=159` is required** — with `partner=51` (the old value) champs
+  return empty. `getEmpty=true&gr=412&mode=3` unlocks events.
+- The events endpoint **ignores `sport` (singular) and requires `sports`
+  (plural)** to filter by sport id.
+- The edge gateway checks **query-string order**: `GetChampsZip` must start
+  with `sport=N&lng=...` — any other order returns HTTP 406. The client
+  therefore builds ordered query strings (never sorted).
+- `Get1x2_VZip`, `GetGameZip?gameId=...` and `sportId=...` return 406 from
+  this backend; the working variants are `Get1x2_Zip`, `GetGameZip?id=...`
+  and `sport=...`.
+- Events carry no decimal odds in the feed; odds come from `GetGameZip`,
+  which returns a **flat outcome list** `{T,C,P,G}` where `T` is the outcome
+  type, `C` the decimal odds, `P` the line (handicap/total) and `G` the
+  market id. Outcome types decoded: 1/2/3 = 1/X/2, 4/5/6 = 1X/12/X2,
+  7/8 = handicap sides, 9/10/11/12 = over/under, 2951–2954 = scaled
+  total lines (P encoding `1.015→0.5, 16.03→1.5, ...`), 15–23 = correct
+  score lines.
+
+## Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/healthz` | liveness |
+| GET | `/sports` | sport list (id → name; ids verified against live gateway) |
+| GET | `/sports/{sport}/leagues` | leagues/championships for a sport |
+| GET | `/sports/{sport}/events` | events for a sport |
+| GET | `/events/{id}/markets` | full event: all markets + all odds |
+| GET | `/events/{id}/odds` | main 1X2 odds snapshot (from markets) |
+| GET | `/debug/raw?path=GetGameZip&id=...` | raw 1xbet JSON passthrough (for verifying mappings) |
+
+### Query params
+
+- `/sports/{sport}/events?count=50&league=ID`
+  - `count` — max events (default 50)
+  - `league` — comma-separated league ids (passed as `champs`)
+
+### Sport ids (live-verified)
+
+`1` Football · `2` Ice Hockey · `3` Basketball · `4` Tennis · `5` Baseball ·
+`6` Volleyball · `7` Rugby · `8` Handball · `9` Boxing · `10` Table Tennis ·
+`11` Chess · `12` Billiards · `13` American Football · `14` Futsal ·
+`16` Badminton · `18` Motorsport · `20` TV Games · `21` Darts ·
+`26` Formula 1 · `27` Field Hockey · `28` Australian Rules · `30` Snooker ·
+`36` Bicycle Racing · `40` Esports · `41` Golf · `44` Horse Racing ·
+`48` Lacrosse · `53` Wrestling · **`56` Martial Arts (UFC/MMA orgs)** ·
+`80` Gaelic Football
+
+### Example responses
+
+`GET /sports/56/events` → array of:
+
+```json
+{
+  "id": 746855673,
+  "sport_id": 56,
+  "league_id": 2900783,
+  "league_name": "Combatsport. AMC Fight Nights",
+  "home": "Dmitry Vasenev",
+  "away": "Vadim Litvin",
+  "start_time": "2026-08-27T16:00:00Z",
+  "status": "prematch",
+  "raw_status": 2
+}
+```
+
+`GET /events/746855673/markets` → array of:
+
+```json
+{
+  "id": 1,
+  "name": "Match Winner",
+  "outcomes": [
+    {"id": 1, "name": "1", "odds": 1.07},
+    {"id": 2, "name": "X", "odds": 75},
+    {"id": 3, "name": "2", "odds": 7.5}
+  ]
+}
+```
+
+## Run
+
+```bash
+go build -o bin/xbet-api ./cmd/server
+./bin/xbet-api -addr :8080
+```
+
+### Configuration
+
+| Setting | Mechanism |
+|---|---|
+| Mirror list | `-mirrors` flag or env `XBET_MIRRORS` (comma-separated). Defaults: `1xbet.ng, 1xbet.co.ke, 1xbet.ci, 1xbet.ug` first (reachable without Cloudflare challenges), then the regional `.com` mirrors |
+| Proxy | `HTTPS_PROXY`/`HTTP_PROXY` env vars (used automatically) |
+| Port | `-addr` flag (default `:8080`) |
+| API base path | `ClientOptions.BasePath` (default `/service-api/LineFeed/`; legacy `/LineFeed/` for old hosts) |
+
+### Live verification
+
+```bash
+# raw payloads, for verifying/updating field mappings:
+curl 'localhost:8080/debug/raw?path=GetChampsZip&sport=56'
+curl 'localhost:8080/debug/raw?path=Get1x2_Zip&sports=56&count=10'
+curl 'localhost:8080/debug/raw?path=GetGameZip&id=746855673'
+```
+
+## Caching
+
+In-memory TTL cache: 60s for leagues, 15s for events and game details.
+
+## Status codes
+
+The feed's numeric status (`SS`) is preserved as `raw_status`. Observed
+values 1–2 = prematch; live/finished mapping needs verification against
+live data (the current LINE feed only returns upcoming events).
+
+## Market dictionary
+
+The flat odds format has no inline market names. `internal/xbet/normalize.go`
+ships a best-effort dictionary (Match Winner, Asian Handicap, Double Chance,
+Total, Correct Score, ...); unknown market ids appear as `Market N` with
+`Outcome T` labels. Extend `marketNames` / `outcomeLabel` as you identify
+new ids — `/debug/raw` gives you the raw `G`/`T` values to map.
+
+## Tests
+
+```bash
+go test ./...        # unit tests against gzip'd fixtures + httptest failover
+go test -race ./...  # concurrency check
+```
+
+Fixtures in `testdata/` are captured from real gateway responses (new
+envelope format) plus legacy-shape fixtures for the old API.
+
+## Project layout
+
+```
+cmd/server/        main: flags, mirror list, probe loop
+internal/model/    normalized data model (Sport, League, Event, Market, Outcome)
+internal/xbet/     raw structs, normalizer, market dictionary, mirror pool, client
+internal/cache/    in-memory TTL cache
+internal/api/      REST handlers (stdlib net/http)
+testdata/          fixture responses for tests
+```
+
+## Legal note
+
+1xbet's ToS prohibit automated access; this project is for personal/educational
+use. Rate-limit politely — the cache throttles repeat hits and the client
+does not retry aggressively.

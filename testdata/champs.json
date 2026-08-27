@@ -1,0 +1,9 @@
+{
+  "Error": { "Code": 0 },
+  "Value": [
+    { "I": 88, "L": "Germany", "S": 1, "SId": 0, "Z": 0, "P": false, "Q": false, "IsG": true, "R": false },
+    { "I": 3575, "L": "England", "S": 1, "SId": 0, "Z": 0, "P": false, "Q": false, "IsG": true, "R": false },
+    { "I": 7, "L": "USA", "S": 2, "SId": 0, "Z": 0, "P": false, "Q": false, "IsG": true, "R": false }
+  ],
+  "Z": 5
+}

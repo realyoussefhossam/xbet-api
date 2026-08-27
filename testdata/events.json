@@ -1,0 +1,54 @@
+{
+  "Error": { "Code": 0 },
+  "Value": {
+    "G": [
+      {
+        "I": 305847416,
+        "CI": 88,
+        "LI": 425,
+        "LN": "Germany. Bundesliga",
+        "O1E": "Bayern Munich",
+        "O2E": "Borussia Dortmund",
+        "O1": 1.85,
+        "OX": 3.75,
+        "O2": 4.10,
+        "G1": 0,
+        "G2": 0,
+        "ST": 1,
+        "T": 1710000000,
+        "S": 1710000000
+      },
+      {
+        "I": 305847417,
+        "CI": 88,
+        "LI": 425,
+        "LN": "Germany. Bundesliga",
+        "O1E": "RB Leipzig",
+        "O2E": "Bayer Leverkusen",
+        "O1": 2.40,
+        "OX": 3.30,
+        "O2": 2.90,
+        "G1": 1,
+        "G2": 2,
+        "ST": 7,
+        "T": 1710003600,
+        "S": 1710003600
+      },
+      {
+        "I": 305847418,
+        "CI": 88,
+        "LI": 425,
+        "LN": "Germany. Bundesliga",
+        "O1E": "VfB Stuttgart",
+        "O2E": "Eintracht Frankfurt",
+        "G1": 0,
+        "G2": 0,
+        "ST": 1,
+        "T": 1710007200,
+        "S": 1710007200
+      }
+    ],
+    "A": []
+  },
+  "Z": 6
+}

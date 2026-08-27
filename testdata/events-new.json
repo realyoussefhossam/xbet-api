@@ -1,0 +1,37 @@
+{
+  "Id": 0,
+  "Success": true,
+  "Error": "",
+  "ErrorCode": 0,
+  "Guid": "",
+  "Value": [
+    {
+      "B": 47798, "GVE": 1, "GSE": true, "HL": true, "IG": true,
+      "I": 744496916, "N": 166337, "CI": 360044244, "T": 1000,
+      "E": [], "EC": 1262, "TG": "", "V": "", "VE": "", "PN": "", "TN": "Half",
+      "SS": 2, "SST": 2, "HSI": true, "SSI": 0, "STI": "6a44f21b5e99bd05c646499a",
+      "S": 1787855400, "HS": 1, "SGC": 19,
+      "O1": "Celta", "O2": "Osasuna",
+      "O1I": 3476, "O2I": 3470, "O1C": 78, "O2C": 78,
+      "O1R": "Сельта", "O2R": "Осасуна", "O1E": "Celta", "O2E": "Osasuna",
+      "SI": 1, "SN": "Football", "SR": "Футбол", "SE": "Football",
+      "L": "Spain. La Liga", "LR": "Чемпионат Испании. Примера", "LE": "Spain. La Liga",
+      "LI": 127733, "CN": "Spain", "COI": 78, "MS": [0], "KI": 3, "CID": 1,
+      "WP": { "P1": 0.48, "P2": 0.24, "PX": 0.28 }
+    },
+    {
+      "B": 49598, "GVE": 1, "GSE": true, "HL": true, "IG": true,
+      "I": 736802022, "N": 205713, "CI": 351319760, "T": 1000,
+      "E": [], "EC": 1311, "TG": "", "V": "", "VE": "", "PN": "", "TN": "Half",
+      "SS": 2, "SST": 2, "HSI": true, "SSI": 0, "STI": "6a44f21b5e99bd05c646499a",
+      "S": 1787857200, "HS": 1, "SGC": 22,
+      "O1": "Barcelona", "O2": "Athletic Bilbao",
+      "O1I": 3442, "O2I": 11851, "O1C": 78, "O2C": 78,
+      "O1R": "Барселона", "O2R": "Атлетик Бильбао", "O1E": "Barcelona", "O2E": "Athletic Bilbao",
+      "SI": 1, "SN": "Football", "SR": "Футбол", "SE": "Football",
+      "L": "Spain. La Liga", "LR": "Чемпионат Испании. Примера", "LE": "Spain. La Liga",
+      "LI": 127733, "CN": "Spain", "COI": 78, "MS": [0], "KI": 3, "CID": 1,
+      "WP": { "P1": 0.77, "P2": 0.08, "PX": 0.15 }
+    }
+  ]
+}

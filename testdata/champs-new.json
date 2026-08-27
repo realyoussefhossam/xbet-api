@@ -1,0 +1,12 @@
+{
+  "Id": 0,
+  "Success": true,
+  "Error": "",
+  "ErrorCode": 0,
+  "Guid": "",
+  "Value": [
+    { "SI": 1, "SN": "Football", "SR": "Футбол", "L": "UEFA Europa League", "LR": "Лига Европы УЕФА", "LI": 118593, "CI": 223, "GC": 14, "CHIMG": "52ccc7a2015c783627fbd4d5b4e11049.png" },
+    { "SI": 1, "SN": "Football", "SR": "Футбол", "L": "Spain. La Liga", "LR": "Чемпионат Испании. Примера", "LI": 127733, "CI": 78, "GC": 20, "CHIMG": "e1b437cd1e7f0a1c0e7e04f1cbb23553.png" },
+    { "SI": 56, "SN": "Martial Arts", "SR": "Единоборства", "L": "Combatsport. ONE Championship", "LR": "Единоборства. ONE Championship", "LI": 2485111, "CI": 225, "GC": 14, "CHIMG": "4c0bbf5d33b1f4a0f0f6c72e1f70d1de.png" }
+  ]
+}
