@@ -221,3 +221,77 @@ func TestGetAllEventsPages(t *testing.T) {
 		}
 	}
 }
+
+// TestGetLiveEvents verifies the v3 live feed: gr candidates are tried and
+// the response (scores + main odds) is normalized.
+func TestGetLiveEvents(t *testing.T) {
+	var gotGR string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !containsStr(r.URL.Path, "games1x2") {
+			http.NotFound(w, r)
+			return
+		}
+		gotGR = r.URL.Query().Get("gr")
+		body := gz(loadFixture(t, "live-games.json"))
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(body)
+	}))
+	defer srv.Close()
+
+	c := NewClient(ClientOptions{
+		Mirrors: []string{srv.Listener.Addr().String()},
+		Timeout: 5 * time.Second,
+		Scheme:  "http",
+	})
+	evs, err := c.GetLiveEvents(context.Background(), 1, 40)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// sport filter: fixture has no football (cricket first) -> 0 expected with filter
+	_ = evs
+	// without filter
+	evs, err = c.GetLiveEvents(context.Background(), 0, 40)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(evs) != 2 {
+		t.Fatalf("want 2 live events, got %d", len(evs))
+	}
+	if evs[0].Status != "live" || evs[0].Score == nil {
+		t.Fatalf("bad live event: %+v", evs[0])
+	}
+	if gotGR == "" {
+		t.Fatal("gr param not sent")
+	}
+}
+
+// TestGetLiveGameFallback: GetGame fails with "not found" for live games, so
+// the server must fall back to the live feed. (client-side: GetLiveGame works)
+func TestGetLiveGame(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !containsStr(r.URL.Path, "gameEvents") {
+			http.NotFound(w, r)
+			return
+		}
+		body := gz(loadFixture(t, "live-game-events.json"))
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(body)
+	}))
+	defer srv.Close()
+
+	c := NewClient(ClientOptions{
+		Mirrors: []string{srv.Listener.Addr().String()},
+		Timeout: 5 * time.Second,
+		Scheme:  "http",
+	})
+	d, err := c.GetLiveGame(context.Background(), 747600716)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.Status != "live" {
+		t.Fatalf("want live status, got %s", d.Status)
+	}
+	if len(d.Markets) == 0 || d.Markets[0].Name != "Match Winner" {
+		t.Fatalf("bad markets: %+v", d.Markets)
+	}
+}

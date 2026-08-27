@@ -50,8 +50,9 @@ clean model. All endpoints were verified against the live gateway.
 | GET | `/healthz` | liveness |
 | GET | `/sports` | sport list (id → name; ids verified against live gateway) |
 | GET | `/sports/{sport}/leagues` | leagues/championships for a sport |
-| GET | `/sports/{sport}/events` | events for a sport |
-| GET | `/events/{id}/markets` | full event: all markets + all odds |
+| GET | `/sports/{sport}/events` | events for a sport (`status=live` = in-play) |
+| GET | `/live/events?count=40` | **all in-play events across every sport** (scores + main odds) |
+| GET | `/events/{id}/markets` | full event: all markets + all odds (line **or live**) |
 | GET | `/events/{id}/odds` | main 1X2 odds snapshot (from markets) |
 | GET | `/debug/raw?path=GetGameZip&id=...` | raw 1xbet JSON passthrough (for verifying mappings) |
 
@@ -109,6 +110,34 @@ Prospective fights)
     {"id": 3, "name": "2", "odds": 7.5}
   ]
 }
+```
+
+## Live (in-play)
+
+Live data comes from the frontend's dedicated v3 feed:
+
+| Endpoint | Purpose |
+|---|---|
+| `main-live-feed/v3/games1x2` | in-play games with scores, period, main 1X2 odds |
+| `main-live-feed/v3/gameEvents` | all markets for an in-play game |
+
+Notes from reverse-engineering:
+
+- `gr` (project id) is **domain-specific** (1557 = lite, 412 = ng); the client
+  tries both per host.
+- The v3 gateway is **query-order sensitive**: `cfView` leads, `gr` must sit
+  between `fcountry` and `grMode` — any other arrangement returns 400.
+- The v3 endpoints are absolute paths (not under `LineFeed/`).
+
+```bash
+# every live event right now:
+curl 'localhost:8080/live/events?count=40'
+
+# live events for one sport (football = 1):
+curl 'localhost:8080/sports/1/events?status=live'
+
+# markets of a live game (auto-falls back from line GetGameZip to live feed):
+curl 'localhost:8080/events/747600716/markets'
 ```
 
 ## Run

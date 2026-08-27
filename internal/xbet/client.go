@@ -29,6 +29,16 @@ const (
 	DefaultMode    = 3
 )
 
+// live feed endpoints (v3). gr (project id) varies per domain; the v3 calls
+// try the known candidates per host.
+const (
+	epLiveGames = "/service-api/main-live-feed/v3/games1x2"
+	epLiveGame  = "/service-api/main-live-feed/v3/gameEvents"
+)
+
+// liveGrCandidates: project ids seen across domains (1557 = lite, 412 = ng).
+var liveGrCandidates = []int{1557, 412}
+
 var defaultUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
 // kv is one ordered query parameter.
@@ -69,6 +79,7 @@ type Client struct {
 	scheme   string
 	basePath string
 	lng      string
+	fcountry string
 	timeout  time.Duration
 	partner  int
 	jarMu    sync.Mutex
@@ -85,6 +96,7 @@ type ClientOptions struct {
 	Scheme   string        // default "https"; "http" for tests
 	BasePath string        // default DefaultBasePath
 	Partner  int           // default DefaultPartner
+	FCountry string        // frontend country id for v3 feeds; default "66"
 }
 
 // NewClient creates a Client. Use http.ProxyFromEnvironment when proxy==nil
@@ -101,6 +113,9 @@ func NewClient(opts ClientOptions) *Client {
 	}
 	if opts.Partner == 0 {
 		opts.Partner = DefaultPartner
+	}
+	if opts.FCountry == "" {
+		opts.FCountry = "66"
 	}
 	if opts.Timeout <= 0 {
 		opts.Timeout = 15 * time.Second
@@ -126,6 +141,7 @@ func NewClient(opts ClientOptions) *Client {
 		scheme:   opts.Scheme,
 		basePath: opts.BasePath,
 		lng:      opts.Lng,
+		fcountry: opts.FCountry,
 		timeout:  opts.Timeout,
 		partner:  opts.Partner,
 		jars:     map[string]http.CookieJar{},
@@ -296,6 +312,92 @@ func (c *Client) GetGame(ctx context.Context, eventID int64) (model.EventDetail,
 	return normalizeGameLegacy(legacy), nil
 }
 
+// GetLiveEvents returns currently in-play events (optionally filtered by
+// sportID; 0 = all sports) with live scores and main 1X2 odds.
+func (c *Client) GetLiveEvents(ctx context.Context, sportID, count int) ([]model.Event, error) {
+	if count <= 0 {
+		count = 40
+	}
+	q := orderedQuery{
+		{"cfView", "3"},
+		{"count", fmt.Sprint(count)},
+		{"fcountry", c.fcountry},
+		// gr inserted at index 3 by doV3
+		{"grMode", "4"},
+		{"lng", c.lng},
+		{"ref", "1"},
+	}
+	body, err := c.doV3(ctx, epLiveGames, q, 3)
+	if err != nil {
+		return nil, err
+	}
+	var games []rawLiveGame
+	if err := json.Unmarshal(body, &games); err != nil {
+		return nil, fmt.Errorf("decode live games: %w", err)
+	}
+	out := make([]model.Event, 0, len(games))
+	for _, g := range games {
+		if sportID > 0 && int(g.Sport.ID) != sportID {
+			continue
+		}
+		out = append(out, normalizeLiveGame(g))
+	}
+	return out, nil
+}
+
+// GetLiveGame returns all markets for an in-play game.
+func (c *Client) GetLiveGame(ctx context.Context, gameID int64) (model.EventDetail, error) {
+	q := orderedQuery{
+		{"cfView", "3"},
+		{"countEvents", "250"},
+		{"fcountry", c.fcountry},
+		{"gameId", fmt.Sprint(gameID)},
+		// gr inserted at index 4 by doV3
+		{"grMode", "4"},
+		{"lng", c.lng},
+		{"marketType", "1"},
+		{"ref", "1"},
+	}
+	body, err := c.doV3(ctx, epLiveGame, q, 4)
+	if err != nil {
+		return model.EventDetail{}, err
+	}
+	var ge rawLiveGameEvents
+	if err := json.Unmarshal(body, &ge); err != nil {
+		return model.EventDetail{}, fmt.Errorf("decode live game: %w", err)
+	}
+	return normalizeLiveGameEvents(ge), nil
+}
+
+// doV3 performs a GET on a v3 endpoint, trying each mirror host with each
+// known gr (project id) candidate. gr must sit at grIndex: the v3 gateway
+// validates parameter order and 400s on any other arrangement.
+func (c *Client) doV3(ctx context.Context, ep string, q orderedQuery, grIndex int) ([]byte, error) {
+	var lastErr error
+	for _, host := range c.pool.Hosts() {
+		for _, gr := range liveGrCandidates {
+			q2 := insertKV(q, grIndex, kv{"gr", fmt.Sprint(gr)})
+			body, err := c.doHost(ctx, host, ep, q2)
+			if err == nil {
+				c.pool.ReportSuccess(host)
+				return body, nil
+			}
+			lastErr = err
+		}
+		c.pool.ReportFailure(host)
+	}
+	return nil, fmt.Errorf("all mirrors failed for %s: %w", ep, lastErr)
+}
+
+// insertKV returns a copy of q with the kv inserted at index i.
+func insertKV(q orderedQuery, i int, kv kv) orderedQuery {
+	out := make(orderedQuery, 0, len(q)+1)
+	out = append(out, q[:i]...)
+	out = append(out, kv)
+	out = append(out, q[i:]...)
+	return out
+}
+
 // Raw performs a passthrough call to a LineFeed endpoint and returns the
 // decoded JSON as-is. Useful for verifying field mappings against live data.
 func (c *Client) Raw(ctx context.Context, path string, q url.Values) ([]byte, error) {
@@ -355,13 +457,19 @@ func (c *Client) do(ctx context.Context, ep string, q orderedQuery) ([]byte, err
 	return nil, fmt.Errorf("all mirrors failed for %s: %w", ep, lastErr)
 }
 
-// doHost performs a single request against one mirror host.
+// doHost performs a single request against one mirror host. ep may be an
+// absolute path (starts with "/", e.g. v3 feed endpoints) or a LineFeed
+// endpoint name relative to basePath.
 func (c *Client) doHost(ctx context.Context, host, ep string, q orderedQuery) ([]byte, error) {
 	if err := c.bootstrap(ctx, host); err != nil {
 		return nil, fmt.Errorf("bootstrap %s: %w", host, err)
 	}
 
-	u := c.scheme + "://" + host + c.basePath + ep
+	path := ep
+	if !strings.HasPrefix(path, "/") {
+		path = c.basePath + path
+	}
+	u := c.scheme + "://" + host + path
 	if len(q) > 0 {
 		u += "?" + q.encode()
 	}

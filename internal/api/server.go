@@ -22,7 +22,9 @@ type Fetcher interface {
 	GetChamps(ctx context.Context, sportID int) ([]model.League, error)
 	GetEvents(ctx context.Context, sportID int, p xbet.EventsParams) ([]model.Event, error)
 	GetAllEvents(ctx context.Context, sportID int, p xbet.EventsParams, maxDays int) ([]model.Event, error)
+	GetLiveEvents(ctx context.Context, sportID, count int) ([]model.Event, error)
 	GetGame(ctx context.Context, eventID int64) (model.EventDetail, error)
+	GetLiveGame(ctx context.Context, gameID int64) (model.EventDetail, error)
 	Raw(ctx context.Context, path string, q url.Values) ([]byte, error)
 }
 
@@ -76,6 +78,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /sports", s.handleSports)
 	mux.HandleFunc("GET /sports/{sport}/leagues", s.handleLeagues)
 	mux.HandleFunc("GET /sports/{sport}/events", s.handleEvents)
+	mux.HandleFunc("GET /live/events", s.handleLiveAll)
 	mux.HandleFunc("GET /events/{id}/markets", s.handleMarkets)
 	mux.HandleFunc("GET /events/{id}/odds", s.handleOdds)
 	mux.HandleFunc("GET /debug/raw", s.handleRaw)
@@ -153,13 +156,38 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	all := q.Get("all") == "true"
+	live := params.Live
 
-	key := fmt.Sprintf("events:%d:%s:%d:%t:%t:%d:%d", sportID, params.Champs, params.Count, params.Live, all, params.From, params.To)
+	key := fmt.Sprintf("events:%d:%s:%d:%t:%t:%t:%d:%d", sportID, params.Champs, params.Count, live, all, params.Live, params.From, params.To)
 	v, err := s.events.GetOrLoad(key, func() (any, error) {
+		if live {
+			return s.fetcher.GetLiveEvents(r.Context(), sportID, params.Count)
+		}
 		if all {
 			return s.fetcher.GetAllEvents(r.Context(), sportID, params, 180)
 		}
 		return s.fetcher.GetEvents(r.Context(), sportID, params)
+	})
+	if err != nil {
+		writeErr(w, http.StatusBadGateway, fmt.Errorf("upstream: %w", err))
+		return
+	}
+	writeJSON(w, http.StatusOK, v)
+}
+
+// handleLiveAll returns currently in-play events across all sports.
+func (s *Server) handleLiveAll(w http.ResponseWriter, r *http.Request) {
+	count := 40
+	if c := r.URL.Query().Get("count"); c != "" {
+		n, err := strconv.Atoi(c)
+		if err != nil || n <= 0 {
+			writeErr(w, http.StatusBadRequest, fmt.Errorf("invalid count: %q", c))
+			return
+		}
+		count = n
+	}
+	v, err := s.events.GetOrLoad(fmt.Sprintf("live:all:%d", count), func() (any, error) {
+		return s.fetcher.GetLiveEvents(r.Context(), 0, count)
 	})
 	if err != nil {
 		writeErr(w, http.StatusBadGateway, fmt.Errorf("upstream: %w", err))
@@ -198,12 +226,24 @@ func (s *Server) handleOdds(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) game(r *http.Request, id int64) (model.EventDetail, error) {
 	v, err := s.games.GetOrLoad(fmt.Sprintf("game:%d", id), func() (any, error) {
-		return s.fetcher.GetGame(r.Context(), id)
+		detail, err := s.fetcher.GetGame(r.Context(), id)
+		if err != nil && isNotFound(err) {
+			// in-play game: the line endpoint doesn't know it; try the live feed
+			return s.fetcher.GetLiveGame(r.Context(), id)
+		}
+		return detail, err
 	})
 	if err != nil {
 		return model.EventDetail{}, fmt.Errorf("upstream: %w", err)
 	}
 	return v.(model.EventDetail), nil
+}
+
+// isNotFound reports whether an upstream error means the game isn't in the
+// line feed (so the live feed should be tried).
+func isNotFound(err error) bool {
+	s := err.Error()
+	return strings.Contains(s, "Game is not found") || strings.Contains(s, "not found in Sports")
 }
 
 // handleRaw passes through a LineFeed call untouched — for verifying

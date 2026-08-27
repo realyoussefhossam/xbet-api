@@ -182,10 +182,18 @@ func normalizeGameFlat(g rawGame) model.EventDetail {
 	// MT ids are not the same as the market ids (E[].G), so we cannot map them
 	// reliably without the frontend's private dictionary. Leave group empty.
 
-	// group outcomes by market id
+	detail := model.EventDetail{Event: ev}
+	detail.Markets = buildMarkets(g.E)
+	return detail
+}
+
+// buildMarkets groups flat outcomes by market id (G) and resolves official
+// names via the embedded dictionary. Shared by prematch (GetGameZip) and
+// live (gameEvents) payloads.
+func buildMarkets(E []rawFlatOutcome) []model.Market {
 	byMarket := map[int][]rawFlatOutcome{}
 	order := []int{}
-	for _, o := range g.E {
+	for _, o := range E {
 		gid := int(o.G)
 		if _, ok := byMarket[gid]; !ok {
 			order = append(order, gid)
@@ -193,7 +201,7 @@ func normalizeGameFlat(g rawGame) model.EventDetail {
 		byMarket[gid] = append(byMarket[gid], o)
 	}
 
-	detail := model.EventDetail{Event: ev}
+	markets := make([]model.Market, 0, len(order))
 	for _, gid := range order {
 		outs := byMarket[gid]
 		market := model.Market{
@@ -204,13 +212,111 @@ func normalizeGameFlat(g rawGame) model.EventDetail {
 			market.Name = fmt.Sprintf("Market %d", gid)
 		}
 		for _, o := range outs {
-			market.Outcomes = append(market.Outcomes, model.Outcome{
-				ID:   int64(o.T),
-				Name: firstNonEmpty(dictOutcomeName(gid, int(o.T), float64(o.P)), outcomeLabel(int(o.T), float64(o.P))),
-				Odds: float64(o.C),
-			})
+			out := model.Outcome{
+				ID:     int64(o.T),
+				Name:   firstNonEmpty(dictOutcomeName(gid, int(o.T), float64(o.P)), outcomeLabel(int(o.T), float64(o.P))),
+				Odds:   float64(o.C),
+				Locked: o.Block != 0,
+			}
+			if out.Locked {
+				market.Locked = true
+			}
+			market.Outcomes = append(market.Outcomes, out)
 		}
-		detail.Markets = append(detail.Markets, market)
+		markets = append(markets, market)
+	}
+	return markets
+}
+
+// liveOutcomes converts live eventGroups to the flat outcome form.
+func liveOutcomes(groups []rawLiveGroup) []rawFlatOutcome {
+	var out []rawFlatOutcome
+	for _, g := range groups {
+		for _, list := range g.Events {
+			for _, o := range list {
+				out = append(out, rawFlatOutcome{
+					T:     o.Type,
+					P:     o.Parameter,
+					C:     o.CF,
+					G:     g.GroupID,
+					Block: o.Block,
+				})
+			}
+		}
+	}
+	return out
+}
+
+// normalizeLiveGame converts a live feed entry into a model.Event.
+func normalizeLiveGame(g rawLiveGame) model.Event {
+	ev := model.Event{
+		ID:         int64(g.ID),
+		SportID:    int(g.Sport.ID),
+		LeagueID:   int(g.Liga.ID),
+		LeagueName: g.Liga.Name,
+		Home:       g.Opponent1.FullName,
+		Away:       g.Opponent2.FullName,
+		Status:     model.StatusLive,
+		RawStatus:  1,
+	}
+	if ts := int64(g.StartTs); ts > 0 {
+		ev.StartTime = time.Unix(ts, 0).UTC()
+	}
+	if g.Scores.ScoreOpp1 != 0 || g.Scores.ScoreOpp2 != 0 {
+		ev.Score = map[string]int{"home": g.Scores.ScoreOpp1, "away": g.Scores.ScoreOpp2}
+	}
+	ev.Locked = g.Blocked
+	for _, grp := range g.EventGroups {
+		if grp.GroupID != 1 {
+			continue
+		}
+		var o model.Odds
+		for _, list := range grp.Events {
+			for _, oo := range list {
+				switch int(oo.Type) {
+				case 1:
+					o.Home = float64(oo.CF)
+				case 2:
+					o.Draw = float64(oo.CF)
+				case 3:
+					o.Away = float64(oo.CF)
+				}
+			}
+		}
+		if o.Home > 0 || o.Draw > 0 || o.Away > 0 {
+			ev.MainOdds = &o
+		}
+		break
+	}
+	return ev
+}
+
+// normalizeLiveGameEvents converts a live gameEvents payload into a full
+// EventDetail with all markets.
+func normalizeLiveGameEvents(g rawLiveGameEvents) model.EventDetail {
+	ev := model.Event{
+		ID:        int64(g.ID),
+		Status:    model.StatusLive,
+		RawStatus: 1,
+	}
+	if ts := int64(g.StartTs); ts > 0 {
+		ev.StartTime = time.Unix(ts, 0).UTC()
+	}
+	if g.Scores.ScoreOpp1 != 0 || g.Scores.ScoreOpp2 != 0 {
+		ev.Score = map[string]int{"home": g.Scores.ScoreOpp1, "away": g.Scores.ScoreOpp2}
+	}
+	ev.Locked = g.Blocked
+	detail := model.EventDetail{Event: ev}
+	detail.Markets = buildMarkets(liveOutcomes(g.EventGroups))
+	// propagate group-level locks
+	groupLocked := map[int]bool{}
+	for _, grp := range g.EventGroups {
+		groupLocked[int(grp.GroupID)] = grp.Blocked
+	}
+	for i := range detail.Markets {
+		if groupLocked[int(detail.Markets[i].ID)] {
+			detail.Markets[i].Locked = true
+		}
 	}
 	return detail
 }

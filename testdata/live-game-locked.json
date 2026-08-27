@@ -1,0 +1,1275 @@
+{
+ "subGamesForMainGame": [
+  {
+   "eventGroups": [
+    {
+     "groupId": 1,
+     "shortGroupId": 1,
+     "events": [
+      [
+       {
+        "type": 1,
+        "cf": 6.72,
+        "cfView": "6.72"
+       }
+      ],
+      [
+       {
+        "type": 2,
+        "cf": 1.455,
+        "cfView": "1.455"
+       }
+      ],
+      [
+       {
+        "type": 3,
+        "cf": 3.96,
+        "cfView": "3.96"
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 8,
+     "shortGroupId": 2,
+     "events": [
+      [
+       {
+        "type": 4,
+        "cf": 1.195,
+        "cfView": "1.195"
+       }
+      ],
+      [
+       {
+        "type": 5,
+        "cf": 2.495,
+        "cfView": "2.495"
+       }
+      ],
+      [
+       {
+        "type": 6,
+        "cf": 1.064,
+        "cfView": "1.064"
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 17,
+     "shortGroupId": 4,
+     "events": [
+      [
+       {
+        "type": 9,
+        "parameter": 2.5,
+        "cf": 2.32,
+        "cfView": "2.32",
+        "isCenter": true,
+        "eventParams": {
+         "params": [
+          "(2.5)"
+         ]
+        }
+       },
+       {
+        "type": 9,
+        "parameter": 3.0,
+        "cf": 5.59,
+        "cfView": "5.59",
+        "eventParams": {
+         "params": [
+          "(3)"
+         ]
+        }
+       },
+       {
+        "type": 9,
+        "parameter": 3.5,
+        "cf": 6.81,
+        "cfView": "6.81",
+        "eventParams": {
+         "params": [
+          "(3.5)"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 10,
+        "parameter": 2.5,
+        "cf": 1.58,
+        "cfView": "1.58",
+        "isCenter": true,
+        "eventParams": {
+         "params": [
+          "(2.5)"
+         ]
+        }
+       },
+       {
+        "type": 10,
+        "parameter": 3.0,
+        "cf": 1.13,
+        "cfView": "1.13",
+        "eventParams": {
+         "params": [
+          "(3)"
+         ]
+        }
+       },
+       {
+        "type": 10,
+        "parameter": 3.5,
+        "cf": 1.075,
+        "cfView": "1.075",
+        "eventParams": {
+         "params": [
+          "(3.5)"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 99,
+     "shortGroupId": 1007,
+     "events": [
+      [
+       {
+        "type": 3827,
+        "parameter": 2.75,
+        "cf": 3.13,
+        "cfView": "3.13",
+        "eventParams": {
+         "params": [
+          "(2.75)"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 3828,
+        "parameter": 2.75,
+        "cf": 1.32,
+        "cfView": "1.32",
+        "eventParams": {
+         "params": [
+          "(2.75)"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 2,
+     "shortGroupId": 3,
+     "events": [
+      [
+       {
+        "type": 7,
+        "cf": 2.54,
+        "cfView": "2.54",
+        "isCenter": true,
+        "eventParams": {
+         "params": [
+          "(0)"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 8,
+        "cf": 1.49,
+        "cfView": "1.49",
+        "isCenter": true,
+        "eventParams": {
+         "params": [
+          "(0)"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 2854,
+     "shortGroupId": 1008,
+     "events": [
+      [
+       {
+        "type": 3829,
+        "parameter": -0.25,
+        "cf": 4.3,
+        "cfView": "4.3",
+        "eventParams": {
+         "params": [
+          "(-0.25)"
+         ]
+        }
+       },
+       {
+        "type": 3829,
+        "parameter": 0.25,
+        "cf": 1.42,
+        "cfView": "1.42",
+        "eventParams": {
+         "params": [
+          "(0.25)"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 3830,
+        "parameter": 0.25,
+        "cf": 1.152,
+        "cfView": "1.152",
+        "eventParams": {
+         "params": [
+          "(0.25)"
+         ]
+        }
+       },
+       {
+        "type": 3830,
+        "parameter": -0.25,
+        "cf": 2.78,
+        "cfView": "2.78",
+        "eventParams": {
+         "params": [
+          "(-0.25)"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 15,
+     "shortGroupId": 5,
+     "events": [
+      [
+       {
+        "type": 11,
+        "parameter": 1.5,
+        "cf": 4.6,
+        "cfView": "4.6",
+        "isCenter": true,
+        "eventParams": {
+         "params": [
+          "(1.5)"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 12,
+        "parameter": 1.5,
+        "cf": 1.18,
+        "cfView": "1.18",
+        "isCenter": true,
+        "eventParams": {
+         "params": [
+          "(1.5)"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 62,
+     "shortGroupId": 6,
+     "events": [
+      [
+       {
+        "type": 13,
+        "parameter": 1.5,
+        "cf": 3.235,
+        "cfView": "3.235",
+        "isCenter": true,
+        "eventParams": {
+         "params": [
+          "(1.5)"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 14,
+        "parameter": 1.5,
+        "cf": 1.325,
+        "cfView": "1.325",
+        "isCenter": true,
+        "eventParams": {
+         "params": [
+          "(1.5)"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 20,
+     "shortGroupId": 11,
+     "events": [
+      [
+       {
+        "type": 388,
+        "parameter": 3.0,
+        "cf": 5.93,
+        "cfView": "5.93",
+        "eventParams": {
+         "params": [
+          "(3)"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 389,
+        "parameter": 3.0,
+        "cf": 3.71,
+        "cfView": "3.71",
+        "eventParams": {
+         "params": [
+          "(3)"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 390,
+        "parameter": 3.0,
+        "cf": 1.58,
+        "cfView": "1.58",
+        "eventParams": {
+         "params": [
+          "(3)"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 3559,
+     "shortGroupId": 1458,
+     "events": [
+      [
+       {
+        "type": 4962,
+        "parameter": 3.0,
+        "cf": 2.445,
+        "cfView": "2.445",
+        "eventParams": {
+         "params": [
+          "3",
+          "0"
+         ]
+        }
+       },
+       {
+        "type": 4962,
+        "parameter": 4.0,
+        "cf": 2.445,
+        "cfView": "2.445",
+        "eventParams": {
+         "params": [
+          "4",
+          "0"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 4963,
+        "parameter": 3.0,
+        "cf": 1.53,
+        "cfView": "1.53",
+        "eventParams": {
+         "params": [
+          "3",
+          "0"
+         ]
+        }
+       },
+       {
+        "type": 4963,
+        "parameter": 4.0,
+        "cf": 1.53,
+        "cfView": "1.53",
+        "eventParams": {
+         "params": [
+          "4",
+          "0"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 3561,
+     "shortGroupId": 1459,
+     "events": [
+      [
+       {
+        "type": 4964,
+        "parameter": 3.0,
+        "cf": 1.232,
+        "cfView": "1.232",
+        "eventParams": {
+         "params": [
+          "(3)"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 4965,
+        "parameter": 3.0,
+        "cf": 2.32,
+        "cfView": "2.32",
+        "eventParams": {
+         "params": [
+          "(3)"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 4966,
+        "parameter": 3.0,
+        "cf": 1.096,
+        "cfView": "1.096",
+        "eventParams": {
+         "params": [
+          "(3)"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 136,
+     "shortGroupId": 33,
+     "events": [
+      [
+       {
+        "type": 731,
+        "parameter": 2.001,
+        "cf": 7.75,
+        "cfView": "7.75",
+        "eventParams": {
+         "params": [
+          "2",
+          "1"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 731,
+        "parameter": 1.001,
+        "cf": 1.58,
+        "cfView": "1.58",
+        "eventParams": {
+         "params": [
+          "1",
+          "1"
+         ]
+        }
+       },
+       {
+        "type": 731,
+        "parameter": 2.002,
+        "cf": 15,
+        "cfView": "15",
+        "eventParams": {
+         "params": [
+          "2",
+          "2"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 731,
+        "parameter": 1.002,
+        "cf": 4.88,
+        "cfView": "4.88",
+        "eventParams": {
+         "params": [
+          "1",
+          "2"
+         ]
+        }
+       },
+       {
+        "type": 731,
+        "parameter": 1.003,
+        "cf": 15,
+        "cfView": "15",
+        "eventParams": {
+         "params": [
+          "1",
+          "3"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 14,
+     "shortGroupId": 22,
+     "events": [
+      [
+       {
+        "type": 182,
+        "cf": 1.39,
+        "cfView": "1.39"
+       }
+      ],
+      [
+       {
+        "type": 183,
+        "cf": 2.91,
+        "cfView": "2.91"
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 60,
+     "shortGroupId": 93,
+     "events": [
+      [
+       {
+        "type": 578,
+        "parameter": 2.0,
+        "cf": 5.32,
+        "cfView": "5.32",
+        "eventParams": {
+         "params": [
+          "(2)"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 579,
+        "parameter": 2.0,
+        "cf": 3.46,
+        "cfView": "3.46",
+        "eventParams": {
+         "params": [
+          "(2)"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 580,
+        "parameter": 2.0,
+        "cf": 1.58,
+        "cfView": "1.58",
+        "eventParams": {
+         "params": [
+          "(2)"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 87,
+     "shortGroupId": 114,
+     "events": [
+      [
+       {
+        "type": 739,
+        "parameter": 3.0,
+        "cf": 6.81,
+        "cfView": "6.81",
+        "eventParams": {
+         "params": [
+          "3"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 741,
+        "parameter": 3.0,
+        "cf": 3.235,
+        "cfView": "3.235",
+        "eventParams": {
+         "params": [
+          "3"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 743,
+        "parameter": 3.0,
+        "cf": 1.58,
+        "cfView": "1.58",
+        "eventParams": {
+         "params": [
+          "3"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 285,
+     "shortGroupId": 347,
+     "events": [
+      [
+       {
+        "type": 1143,
+        "parameter": 1.5,
+        "cf": 1.58,
+        "cfView": "1.58",
+        "eventParams": {
+         "params": [
+          "(1.5)"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 1144,
+        "parameter": 1.5,
+        "cf": 2.32,
+        "cfView": "2.32",
+        "eventParams": {
+         "params": [
+          "(1.5)"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 2668,
+     "shortGroupId": 391,
+     "events": [
+      [
+       {
+        "type": 1558,
+        "parameter": 3.5,
+        "cf": 3.075,
+        "cfView": "3.075",
+        "eventParams": {
+         "params": [
+          "(3.5)"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 1635,
+        "parameter": 3.5,
+        "cf": 1.375,
+        "cfView": "1.375",
+        "eventParams": {
+         "params": [
+          "(3.5)"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 3309,
+     "shortGroupId": 1315,
+     "events": [
+      [
+       {
+        "type": 4554,
+        "blocked": true,
+        "parameter": 2.0,
+        "cf": 1.001,
+        "cfView": "1.001",
+        "eventParams": {
+         "params": [
+          "(2)"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 3311,
+     "shortGroupId": 1316,
+     "events": [
+      [
+       {
+        "type": 4562,
+        "blocked": true,
+        "parameter": 2.0,
+        "cf": 1.001,
+        "cfView": "1.001",
+        "eventParams": {
+         "params": [
+          "(2)"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 7961,
+     "shortGroupId": 2239,
+     "events": [
+      [
+       {
+        "type": 6947,
+        "parameter": 3.004,
+        "cf": 2.375,
+        "cfView": "2.375",
+        "eventParams": {
+         "params": [
+          "3",
+          "4"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 8803,
+     "shortGroupId": 2678,
+     "events": [
+      [
+       {
+        "type": 8536,
+        "parameter": 2.003,
+        "cf": 3.235,
+        "cfView": "3.235",
+        "eventParams": {
+         "params": [
+          "2",
+          "3"
+         ]
+        }
+       }
+      ]
+     ]
+    }
+   ],
+   "period": 1,
+   "id": 747600717,
+   "constId": 363934556,
+   "subGameName": "1st half"
+  },
+  {
+   "eventGroups": [
+    {
+     "groupId": 1,
+     "shortGroupId": 1,
+     "events": [
+      [
+       {
+        "type": 1,
+        "cf": 3.97,
+        "cfView": "3.97"
+       }
+      ],
+      [
+       {
+        "type": 2,
+        "cf": 2.795,
+        "cfView": "2.795"
+       }
+      ],
+      [
+       {
+        "type": 3,
+        "cf": 2.09,
+        "cfView": "2.09"
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 8,
+     "shortGroupId": 2,
+     "events": [
+      [
+       {
+        "type": 4,
+        "cf": 1.64,
+        "cfView": "1.64"
+       }
+      ],
+      [
+       {
+        "type": 5,
+        "cf": 1.37,
+        "cfView": "1.37"
+       }
+      ],
+      [
+       {
+        "type": 6,
+        "cf": 1.195,
+        "cfView": "1.195"
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 17,
+     "shortGroupId": 4,
+     "events": [
+      [
+       {
+        "type": 9,
+        "parameter": 1.5,
+        "cf": 1.83,
+        "cfView": "1.83",
+        "isCenter": true,
+        "eventParams": {
+         "params": [
+          "(1.5)"
+         ]
+        }
+       },
+       {
+        "type": 9,
+        "parameter": 2.0,
+        "cf": 2.74,
+        "cfView": "2.74",
+        "eventParams": {
+         "params": [
+          "(2)"
+         ]
+        }
+       },
+       {
+        "type": 9,
+        "parameter": 2.5,
+        "cf": 3.488,
+        "cfView": "3.488",
+        "eventParams": {
+         "params": [
+          "(2.5)"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 10,
+        "parameter": 1.5,
+        "cf": 1.93,
+        "cfView": "1.93",
+        "isCenter": true,
+        "eventParams": {
+         "params": [
+          "(1.5)"
+         ]
+        }
+       },
+       {
+        "type": 10,
+        "parameter": 2.0,
+        "cf": 1.395,
+        "cfView": "1.395",
+        "eventParams": {
+         "params": [
+          "(2)"
+         ]
+        }
+       },
+       {
+        "type": 10,
+        "parameter": 2.5,
+        "cf": 1.27,
+        "cfView": "1.27",
+        "eventParams": {
+         "params": [
+          "(2.5)"
+         ]
+        }
+       }
+      ]
+     ]
+    },
+    {
+     "groupId": 2,
+     "shortGroupId": 3,
+     "events": [
+      [
+       {
+        "type": 7,
+        "cf": 2.736,
+        "cfView": "2.736",
+        "isCenter": true,
+        "eventParams": {
+         "params": [
+          "(0)"
+         ]
+        }
+       },
+       {
+        "type": 7,
+        "parameter": 1.0,
+        "cf": 1.24,
+        "cfView": "1.24",
+        "eventParams": {
+         "params": [
+          "(1)"
+         ]
+        }
+       },
+       {
+        "type": 7,
+        "parameter": 1.5,
+        "cf": 1.144,
+        "cfView": "1.144",
+        "eventParams": {
+         "params": [
+          "(1.5)"
+         ]
+        }
+       }
+      ],
+      [
+       {
+        "type": 8,
+        "cf": 1.43,
+        "cfView": "1.43",
+        "isCenter": true,
+        "eventParams": {
+         "params": [
+          "(0)"
+         ]
+        }
+       },
+       {
+        "type": 8,
+        "parameter": -1.0,
+        "cf": 3.64,
+        "cfView": "3.64",
+        "eventParams": {
+         "params": [
+          "(-1)"
+         ]
+        }
+       },
+       {
+        "type": 8,
+        "parameter": -1.5,
+        "cf": 4.81,
+        "cfView": "4.81",
+        "eventParams": {
+         "params": [
+          "(-1.5)"
+         ]
+        }
+       }
+      ]
+     ]
+    }
+   ],
+   "period": 2,
+   "id": 747600718,
+   "constId": 363934558,
+   "subGameName": "2nd half"
+  }
+ ],
+ "marketEventsCount": [
+  {
+   "eventsCount": 54,
+   "marketType": 2,
+   "name": "Popular"
+  },
+  {
+   "eventsCount": 36,
+   "marketType": 3,
+   "name": "Total"
+  },
+  {
+   "eventsCount": 14,
+   "marketType": 4,
+   "name": "Handicap"
+  },
+  {
+   "marketType": 5,
+   "name": "Players"
+  }
+ ],
+ "eventsCount": 171,
+ "isEventAll": true,
+ "eventGroups": [
+  {
+   "groupId": 1,
+   "shortGroupId": 1,
+   "events": [
+    [
+     {
+      "type": 1,
+      "cf": 3.87,
+      "cfView": "3.87"
+     }
+    ],
+    [
+     {
+      "type": 2,
+      "cf": 3.335,
+      "cfView": "3.335"
+     }
+    ],
+    [
+     {
+      "type": 3,
+      "cf": 1.885,
+      "cfView": "1.885"
+     }
+    ]
+   ]
+  },
+  {
+   "groupId": 8,
+   "shortGroupId": 2,
+   "events": [
+    [
+     {
+      "type": 4,
+      "cf": 1.79,
+      "cfView": "1.79",
+      "Block": 1
+     }
+    ],
+    [
+     {
+      "type": 5,
+      "cf": 1.27,
+      "cfView": "1.27"
+     }
+    ],
+    [
+     {
+      "type": 6,
+      "cf": 1.205,
+      "cfView": "1.205"
+     }
+    ]
+   ],
+   "blocked": true
+  },
+  {
+   "groupId": 19,
+   "shortGroupId": 21,
+   "events": [
+    [
+     {
+      "type": 11273,
+      "parameter": 2.0,
+      "cf": 2.14,
+      "cfView": "2.14",
+      "eventParams": {
+       "params": [
+        "(2)"
+       ]
+      }
+     }
+    ],
+    [
+     {
+      "type": 11274,
+      "parameter": 2.0,
+      "cf": 1.648,
+      "cfView": "1.648",
+      "eventParams": {
+       "params": [
+        "(2)"
+       ]
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "groupId": 17,
+   "shortGroupId": 4,
+   "events": [
+    [
+     {
+      "type": 9,
+      "parameter": 3.5,
+      "cf": 1.408,
+      "cfView": "1.408",
+      "eventParams": {
+       "params": [
+        "(3.5)"
+       ]
+      }
+     },
+     {
+      "type": 9,
+      "parameter": 4.0,
+      "cf": 1.765,
+      "cfView": "1.765",
+      "isCenter": true,
+      "eventParams": {
+       "params": [
+        "(4)"
+       ]
+      }
+     },
+     {
+      "type": 9,
+      "parameter": 4.5,
+      "cf": 2.37,
+      "cfView": "2.37",
+      "eventParams": {
+       "params": [
+        "(4.5)"
+       ]
+      }
+     },
+     {
+      "type": 9,
+      "parameter": 5.0,
+      "cf": 3.62,
+      "cfView": "3.62",
+      "eventParams": {
+       "params": [
+        "(5)"
+       ]
+      }
+     }
+    ],
+    [
+     {
+      "type": 10,
+      "parameter": 3.5,
+      "cf": 2.7,
+      "cfView": "2.7",
+      "eventParams": {
+       "params": [
+        "(3.5)"
+       ]
+      }
+     },
+     {
+      "type": 10,
+      "parameter": 4.0,
+      "cf": 2.01,
+      "cfView": "2.01",
+      "isCenter": true,
+      "eventParams": {
+       "params": [
+        "(4)"
+       ]
+      }
+     },
+     {
+      "type": 10,
+      "parameter": 4.5,
+      "cf": 1.52,
+      "cfView": "1.52",
+      "eventParams": {
+       "params": [
+        "(4.5)"
+       ]
+      }
+     },
+     {
+      "type": 10,
+      "parameter": 5.0,
+      "cf": 1.256,
+      "cfView": "1.256",
+      "eventParams": {
+       "params": [
+        "(5)"
+       ]
+      }
+     }
+    ]
+   ]
+  }
+ ],
+ "alterOpponents": [],
+ "scores": {
+  "fullScore": "1-1",
+  "periodScores": [
+   {
+    "period": 1,
+    "scoreOpp1": 1,
+    "scoreOpp2": 1,
+    "periodNameFull": "1st half"
+   }
+  ],
+  "currentPeriod": 1,
+  "currentPeriodName": "1st half",
+  "scoreOpp1": 1,
+  "scoreOpp2": 1,
+  "periodScoresStr": "1-1",
+  "timer": {
+   "timeSec": 1964,
+   "timeDirection": 0,
+   "timeRun": false
+  },
+  "fullScoreDetail": {
+   "scoreOpp1": 1,
+   "scoreOpp2": 1
+  },
+  "statusLineStr": "32 minutes"
+ },
+ "updateTs": 1787813345,
+ "id": 747600716,
+ "num": 235335,
+ "mainGameId": 747600716,
+ "constId": 363934520,
+ "startTs": 1787810400,
+ "countryId": 180,
+ "gameTypeName": "",
+ "periodName": "",
+ "menuSection": 2,
+ "mainConstId": 363934520,
+ "kind": 1,
+ "subscriptionAvailable": true,
+ "isFavoriteAvailable": true,
+ "blocked": true
+}

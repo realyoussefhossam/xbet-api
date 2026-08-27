@@ -5,6 +5,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"xbet-api/internal/model"
 )
 
 func loadFixture(t *testing.T, name string) []byte {
@@ -267,5 +269,83 @@ func TestDictionaryRendering(t *testing.T) {
 	// base groups fall back to the hardcoded map
 	if got := dictMarketName(1); got != "" {
 		t.Errorf("group 1 should not be in dict, got %q", got)
+	}
+}
+
+func TestNormalizeLiveGames(t *testing.T) {
+	env := loadFixture(t, "live-games.json")
+	var games []rawLiveGame
+	if err := json.Unmarshal(env, &games); err != nil {
+		t.Fatal(err)
+	}
+	if len(games) != 2 {
+		t.Fatalf("want 2 live games, got %d", len(games))
+	}
+	for _, g := range games {
+		ev := normalizeLiveGame(g)
+		if ev.Status != "live" {
+			t.Errorf("want live status, got %s", ev.Status)
+		}
+		if ev.Home == "" || ev.Away == "" {
+			t.Errorf("missing teams: %+v", ev)
+		}
+		if ev.MainOdds == nil {
+			t.Errorf("missing main odds for %s vs %s", ev.Home, ev.Away)
+		}
+	}
+	// first game is the live football match
+	ev := normalizeLiveGame(games[0])
+	if ev.Score == nil {
+		t.Errorf("want live score, got nil")
+	} else {
+		t.Logf("score %d-%d", ev.Score["home"], ev.Score["away"])
+	}
+}
+
+func TestNormalizeLiveGameEvents(t *testing.T) {
+	var ge rawLiveGameEvents
+	if err := json.Unmarshal(loadFixture(t, "live-game-events.json"), &ge); err != nil {
+		t.Fatal(err)
+	}
+	d := normalizeLiveGameEvents(ge)
+	if d.Status != "live" {
+		t.Errorf("want live, got %s", d.Status)
+	}
+	if len(d.Markets) == 0 {
+		t.Fatal("want markets")
+	}
+	mw := d.Markets[0]
+	if mw.ID != 1 || mw.Name != "Match Winner" {
+		t.Errorf("bad first market: %+v", mw)
+	}
+	if len(mw.Outcomes) != 3 {
+		t.Errorf("want 3 outcomes in match winner, got %d", len(mw.Outcomes))
+	}
+}
+
+func TestNormalizeLockedMarkets(t *testing.T) {
+	var ge rawLiveGameEvents
+	if err := json.Unmarshal(loadFixture(t, "live-game-locked.json"), &ge); err != nil {
+		t.Fatal(err)
+	}
+	d := normalizeLiveGameEvents(ge)
+	if !d.Locked {
+		t.Error("game should be locked (blocked=true)")
+	}
+	// eventGroups[1] was marked locked
+	var lockedMarket *model.Market
+	for i := range d.Markets {
+		if d.Markets[i].ID == 8 { // group 8 = Double Chance in fixture
+			lockedMarket = &d.Markets[i]
+		}
+	}
+	if lockedMarket == nil {
+		t.Fatal("market 8 not found")
+	}
+	if !lockedMarket.Locked {
+		t.Error("market 8 should be locked")
+	}
+	if !lockedMarket.Outcomes[0].Locked {
+		t.Error("outcome should be locked (Block=1)")
 	}
 }

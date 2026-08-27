@@ -1,0 +1,464 @@
+[
+ {
+  "zonePlay": 747046308,
+  "sport": {
+   "timeName": "innings",
+   "timesName": "innings",
+   "id": 66,
+   "name": "Cricket"
+  },
+  "liga": {
+   "countryImage": "/sfiles/logo-flag/a09c04e45bfb1f2440d5185d9c5753ec.png",
+   "image": "/sfiles/logo-champ/387ec8dea1645d74a3e9e404f2af4b8d.png",
+   "id": 2731233,
+   "name": "Sri Lanka vs India"
+  },
+  "opponent1": {
+   "fullName": "Sri Lanka",
+   "countryId": 208,
+   "opps": [
+    {
+     "id": 21871,
+     "name": "Sri Lanka",
+     "image": "/sfiles/logo_teams/21871.png"
+    }
+   ]
+  },
+  "opponent2": {
+   "fullName": "India",
+   "countryId": 71,
+   "opps": [
+    {
+     "id": 22283,
+     "name": "India",
+     "image": "/sfiles/logo_teams/22283.png"
+    }
+   ]
+  },
+  "matchInfo": {
+   "tournamentStage": "2nd test",
+   "location": "Sinhalese Sports Club (Colombo)",
+   "matchFormat": "Test Match",
+   "locationCity": "Colombo",
+   "temperature": "+23°C",
+   "weatherCode": "11",
+   "weatherDescription": "Gloomy",
+   "weatherWindCode": "7",
+   "weatherWindParam": "3",
+   "weatherWindDescription": "SE wind, m/s",
+   "weatherPressure": "760",
+   "weatherPressureDescription": "Pressure, mmHg",
+   "weatherHumidity": "97",
+   "weatherHumidityDescription": "Humidity, %"
+  },
+  "eventGroups": [
+   {
+    "groupId": 1,
+    "shortGroupId": 1,
+    "events": [
+     [
+      {
+       "type": 1,
+       "cf": 32,
+       "cfView": "32"
+      }
+     ],
+     [
+      {
+       "type": 2,
+       "cf": 1.47,
+       "cfView": "1.47"
+      }
+     ],
+     [
+      {
+       "type": 3,
+       "cf": 2.51,
+       "cfView": "2.51"
+      }
+     ]
+    ]
+   },
+   {
+    "groupId": 101,
+    "shortGroupId": 38,
+    "events": [
+     [
+      {
+       "type": 401,
+       "cf": 10.1,
+       "cfView": "10.1"
+      }
+     ],
+     [
+      {
+       "type": 402,
+       "cf": 1.056,
+       "cfView": "1.056"
+      }
+     ]
+    ]
+   }
+  ],
+  "statisticInfo": {
+   "gameId": "6a47bb865e99bd05c6477d4e",
+   "stageId": "69f3c9e95e99bd05c61c5c8d",
+   "stageType": 3,
+   "status": 3,
+   "hasLineUps": true,
+   "hasStadiumInfo": true
+  },
+  "scores": {
+   "scoreOpp1": 619,
+   "scoreOpp2": 503,
+   "currentPeriodName": "",
+   "fullScore": "619-503"
+  },
+  "video": {
+   "enabled": true,
+   "id": "DR_3_1787684583"
+  },
+  "centralBlockEventGroups": [],
+  "eventsCount": 5,
+  "subGamesCount": 5,
+  "hasGraph": true,
+  "id": 746781556,
+  "num": 221161,
+  "mainGameId": 746781556,
+  "constId": 362982326,
+  "startTs": 1787535000,
+  "countryId": 225,
+  "gameTypeName": "",
+  "periodName": "",
+  "menuSection": 2,
+  "mainConstId": 362982326,
+  "kind": 1,
+  "hasHeadToHead": true,
+  "subscriptionAvailable": true,
+  "isFavoriteAvailable": true
+ },
+ {
+  "zonePlay": 747597958,
+  "sport": {
+   "timeName": "Set",
+   "timesName": "Sets",
+   "id": 6,
+   "name": "Volleyball"
+  },
+  "liga": {
+   "countryImage": "/sfiles/logo-flag/14e053ab3466996073a23cde13e286f4.png",
+   "image": "/sfiles/logo-champ/dae6ea4300a7d9ba30ce546364e319cd.png",
+   "id": 104257,
+   "name": "Asian Volleyball Championship. Women"
+  },
+  "opponent1": {
+   "fullName": "Thailand (Women)",
+   "countryId": 180,
+   "opps": [
+    {
+     "id": 20473,
+     "name": "Thailand (Women)",
+     "image": "/sfiles/logo_teams/20473.png"
+    }
+   ]
+  },
+  "opponent2": {
+   "fullName": "South Korea (Women)",
+   "countryId": 215,
+   "opps": [
+    {
+     "id": 30249,
+     "name": "South Korea (Women)",
+     "image": "/sfiles/logo_teams/30249.png"
+    }
+   ]
+  },
+  "matchInfo": {
+   "tournamentStage": "Play-off. Round of 8",
+   "location": "Tianjin Olympic Center Stadium (Tianjin)"
+  },
+  "eventGroups": [
+   {
+    "groupId": 1,
+    "shortGroupId": 1,
+    "events": [
+     [
+      {
+       "type": 1,
+       "cf": 1.02,
+       "cfView": "1.02"
+      }
+     ],
+     [
+      {
+       "type": 3,
+       "cf": 11,
+       "cfView": "11"
+      }
+     ]
+    ]
+   },
+   {
+    "groupId": 17,
+    "shortGroupId": 4,
+    "events": [
+     [
+      {
+       "type": 9,
+       "parameter": 134.5,
+       "cf": 1.82,
+       "cfView": "1.82",
+       "isCenter": true,
+       "eventParams": {
+        "params": [
+         "(134.5)"
+        ]
+       }
+      }
+     ],
+     [
+      {
+       "type": 10,
+       "parameter": 134.5,
+       "cf": 1.92,
+       "cfView": "1.92",
+       "isCenter": true,
+       "eventParams": {
+        "params": [
+         "(134.5)"
+        ]
+       }
+      }
+     ]
+    ]
+   },
+   {
+    "groupId": 2,
+    "shortGroupId": 3,
+    "events": [
+     [
+      {
+       "type": 7,
+       "parameter": -16.5,
+       "cf": 1.968,
+       "cfView": "1.968",
+       "isCenter": true,
+       "eventParams": {
+        "params": [
+         "(-16.5)"
+        ]
+       }
+      }
+     ],
+     [
+      {
+       "type": 8,
+       "parameter": 16.5,
+       "cf": 1.784,
+       "cfView": "1.784",
+       "isCenter": true,
+       "eventParams": {
+        "params": [
+         "(16.5)"
+        ]
+       }
+      }
+     ]
+    ]
+   }
+  ],
+  "statisticInfo": {
+   "hasStatRatingTables": true,
+   "gameId": "6a8f0dce7762417de83e5856",
+   "stageId": "6a8f0dce7762417de83e5859",
+   "stageType": 1,
+   "status": 3,
+   "hasStadiumInfo": true
+  },
+  "scores": {
+   "scoreOpp1": 1,
+   "scoreOpp2": 0,
+   "currentPeriodName": "2nd set",
+   "fullScore": "1-0"
+  },
+  "video": {
+   "enabled": true,
+   "id": "DR_3_1787684528"
+  },
+  "centralBlockEventGroups": [
+   {
+    "groupId": 17,
+    "shortGroupId": 4,
+    "events": [
+     [
+      {
+       "type": 9,
+       "parameter": 133.5,
+       "cf": 1.62,
+       "cfView": "1.62",
+       "eventParams": {
+        "params": [
+         "(133.5)"
+        ]
+       }
+      },
+      {
+       "type": 9,
+       "parameter": 134.5,
+       "cf": 1.82,
+       "cfView": "1.82",
+       "isCenter": true,
+       "eventParams": {
+        "params": [
+         "(134.5)"
+        ]
+       }
+      },
+      {
+       "type": 9,
+       "parameter": 136.5,
+       "cf": 2.23,
+       "cfView": "2.23",
+       "eventParams": {
+        "params": [
+         "(136.5)"
+        ]
+       }
+      },
+      {
+       "type": 9,
+       "parameter": 138.5,
+       "cf": 2.55,
+       "cfView": "2.55",
+       "eventParams": {
+        "params": [
+         "(138.5)"
+        ]
+       }
+      }
+     ],
+     [
+      {
+       "type": 10,
+       "parameter": 133.5,
+       "cf": 2.152,
+       "cfView": "2.152",
+       "eventParams": {
+        "params": [
+         "(133.5)"
+        ]
+       }
+      },
+      {
+       "type": 10,
+       "parameter": 134.5,
+       "cf": 1.92,
+       "cfView": "1.92",
+       "isCenter": true,
+       "eventParams": {
+        "params": [
+         "(134.5)"
+        ]
+       }
+      },
+      {
+       "type": 10,
+       "parameter": 136.5,
+       "cf": 1.58,
+       "cfView": "1.58",
+       "eventParams": {
+        "params": [
+         "(136.5)"
+        ]
+       }
+      },
+      {
+       "type": 10,
+       "parameter": 138.5,
+       "cf": 1.45,
+       "cfView": "1.45",
+       "eventParams": {
+        "params": [
+         "(138.5)"
+        ]
+       }
+      }
+     ]
+    ]
+   },
+   {
+    "groupId": 2,
+    "shortGroupId": 3,
+    "events": [
+     [
+      {
+       "type": 7,
+       "parameter": -16.5,
+       "cf": 1.968,
+       "cfView": "1.968",
+       "isCenter": true,
+       "eventParams": {
+        "params": [
+         "(-16.5)"
+        ]
+       }
+      },
+      {
+       "type": 7,
+       "parameter": -15.5,
+       "cf": 1.67,
+       "cfView": "1.67",
+       "eventParams": {
+        "params": [
+         "(-15.5)"
+        ]
+       }
+      }
+     ],
+     [
+      {
+       "type": 8,
+       "parameter": 16.5,
+       "cf": 1.784,
+       "cfView": "1.784",
+       "isCenter": true,
+       "eventParams": {
+        "params": [
+         "(16.5)"
+        ]
+       }
+      },
+      {
+       "type": 8,
+       "parameter": 15.5,
+       "cf": 2.07,
+       "cfView": "2.07",
+       "eventParams": {
+        "params": [
+         "(15.5)"
+        ]
+       }
+      }
+     ]
+    ]
+   }
+  ],
+  "eventsCount": 36,
+  "subGamesCount": 2,
+  "hasGraph": true,
+  "id": 747597098,
+  "num": 259239,
+  "mainGameId": 747597098,
+  "constId": 363768206,
+  "startTs": 1787810400,
+  "countryId": 229,
+  "gameTypeName": "",
+  "periodName": "",
+  "menuSection": 2,
+  "mainConstId": 363768206,
+  "kind": 1,
+  "hasHeadToHead": true,
+  "subscriptionAvailable": true,
+  "isFavoriteAvailable": true
+ }
+]

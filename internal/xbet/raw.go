@@ -157,12 +157,13 @@ type rawWP struct {
 
 // rawFlatOutcome is one outcome of the flat game odds list (GetGameZip E).
 type rawFlatOutcome struct {
-	T  FlexInt   `json:"T"` // outcome type id
-	P  FlexFloat `json:"P"` // parameter (handicap line / total)
-	C  FlexFloat `json:"C"` // decimal odds
-	CV string    `json:"CV"`
-	G  FlexInt   `json:"G"` // market (group) id
-	CE FlexInt   `json:"CE"`
+	T     FlexInt   `json:"T"` // outcome type id
+	P     FlexFloat `json:"P"` // parameter (handicap line / total)
+	C     FlexFloat `json:"C"` // decimal odds
+	CV    string    `json:"CV"`
+	G     FlexInt   `json:"G"` // market (group) id
+	CE    FlexInt   `json:"CE"`
+	Block FlexInt   `json:"Block"` // 1 = betting locked (present only when locked)
 }
 
 // rawMEC is a market category entry.
@@ -250,4 +251,65 @@ type legacyOutcome struct {
 	O FlexFloat `json:"O"`
 	N string    `json:"N"`
 	C FlexInt   `json:"C"`
+}
+
+// ---- live feed (main-live-feed/v3) ----
+
+// rawLiveGame is one entry of games1x2 (live games list).
+type rawLiveGame struct {
+	ID      FlexInt `json:"id"`
+	ConstID FlexInt `json:"constId"`
+	StartTs FlexInt `json:"startTs"`
+	Kind    FlexInt `json:"kind"`
+	Blocked bool    `json:"blocked"` // whole game locked (present only when locked)
+	Sport   struct {
+		ID   FlexInt `json:"id"`
+		Name string  `json:"name"`
+	} `json:"sport"`
+	Liga struct {
+		ID   FlexInt `json:"id"`
+		Name string  `json:"name"`
+	} `json:"liga"`
+	Opponent1 struct {
+		FullName string `json:"fullName"`
+	} `json:"opponent1"`
+	Opponent2 struct {
+		FullName string `json:"fullName"`
+	} `json:"opponent2"`
+	Scores      rawLiveScores  `json:"scores"`
+	EventGroups []rawLiveGroup `json:"eventGroups"`
+}
+
+// rawLiveScores is the in-play score block.
+type rawLiveScores struct {
+	ScoreOpp1         int    `json:"scoreOpp1"`
+	ScoreOpp2         int    `json:"scoreOpp2"`
+	CurrentPeriodName string `json:"currentPeriodName"`
+	FullScore         string `json:"fullScore"`
+}
+
+// rawLiveGroup is one market group of the live event feed.
+type rawLiveGroup struct {
+	GroupID FlexInt            `json:"groupId"`
+	Events  [][]rawLiveOutcome `json:"events"`
+	Blocked bool               `json:"blocked"` // market locked (present only when locked)
+}
+
+// rawLiveOutcome is one outcome of a live market group.
+type rawLiveOutcome struct {
+	Type      FlexInt   `json:"type"`
+	CF        FlexFloat `json:"cf"`
+	Parameter FlexFloat `json:"parameter"`
+	Block     FlexInt   `json:"Block"` // 1 = betting locked (present only when locked)
+}
+
+// rawLiveGameEvents is the response of gameEvents for a live game.
+type rawLiveGameEvents struct {
+	EventGroups       []rawLiveGroup `json:"eventGroups"`
+	MarketEventsCount []rawMEC       `json:"marketEventsCount"`
+	Scores            rawLiveScores  `json:"scores"`
+	ID                FlexInt        `json:"id"`
+	StartTs           FlexInt        `json:"startTs"`
+	Kind              FlexInt        `json:"kind"`
+	Blocked           bool           `json:"blocked"` // game locked
 }

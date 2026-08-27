@@ -46,6 +46,7 @@ type Event struct {
 	RawStatus  int            `json:"raw_status"`
 	Score      map[string]int `json:"score,omitempty"` // {"home":..,"away":..}
 	MainOdds   *Odds          `json:"main_odds,omitempty"`
+	Locked     bool           `json:"locked,omitempty"` // betting suspended (live)
 }
 
 // IsLive reports whether the event is currently in play.
@@ -53,9 +54,10 @@ func (e Event) IsLive() bool { return e.Status == StatusLive }
 
 // Outcome is a single betting outcome within a market.
 type Outcome struct {
-	ID   int64   `json:"id"`
-	Name string  `json:"name"`
-	Odds float64 `json:"odds"`
+	ID     int64   `json:"id"`
+	Name   string  `json:"name"`
+	Odds   float64 `json:"odds"`
+	Locked bool    `json:"locked,omitempty"` // 1xbet "Block": betting closed
 }
 
 // Market is a group of outcomes (e.g. "Match Winner").
@@ -63,6 +65,7 @@ type Market struct {
 	ID       int64     `json:"id"`
 	Name     string    `json:"name"`
 	Group    string    `json:"group,omitempty"`
+	Locked   bool      `json:"locked,omitempty"`
 	Outcomes []Outcome `json:"outcomes"`
 }
 
