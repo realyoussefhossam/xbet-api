@@ -21,6 +21,7 @@ import (
 type Fetcher interface {
 	GetChamps(ctx context.Context, sportID int) ([]model.League, error)
 	GetEvents(ctx context.Context, sportID int, p xbet.EventsParams) ([]model.Event, error)
+	GetAllEvents(ctx context.Context, sportID int, p xbet.EventsParams, maxDays int) ([]model.Event, error)
 	GetGame(ctx context.Context, eventID int64) (model.EventDetail, error)
 	Raw(ctx context.Context, path string, q url.Values) ([]byte, error)
 }
@@ -151,9 +152,13 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, fmt.Errorf("status must be prematch|live|all"))
 		return
 	}
+	all := q.Get("all") == "true"
 
-	key := fmt.Sprintf("events:%d:%s:%d:%t:%d:%d", sportID, params.Champs, params.Count, params.Live, params.From, params.To)
+	key := fmt.Sprintf("events:%d:%s:%d:%t:%t:%d:%d", sportID, params.Champs, params.Count, params.Live, all, params.From, params.To)
 	v, err := s.events.GetOrLoad(key, func() (any, error) {
+		if all {
+			return s.fetcher.GetAllEvents(r.Context(), sportID, params, 180)
+		}
 		return s.fetcher.GetEvents(r.Context(), sportID, params)
 	})
 	if err != nil {

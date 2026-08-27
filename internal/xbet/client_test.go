@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -170,5 +172,52 @@ func TestRawPassthrough(t *testing.T) {
 	}
 	if !bytes.Contains(body, []byte(`"Value"`)) {
 		t.Fatalf("raw body unexpected: %s", body[:min(len(body), 120)])
+	}
+}
+
+// TestGetAllEventsPages verifies windowed paging collects events beyond the
+// per-request cap. The fake upstream returns max 50 events per window.
+func TestGetAllEventsPages(t *testing.T) {
+	// 120 fake events spread over 3 days (would need >50 per window)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		from, _ := strconv.ParseInt(r.URL.Query().Get("tsFrom"), 10, 64)
+		to, _ := strconv.ParseInt(r.URL.Query().Get("tsTo"), 10, 64)
+		var evs []map[string]any
+		// events every 30 minutes across the window, capped at 50
+		for ts := from; ts < to && len(evs) < 50; ts += 1800 {
+			evs = append(evs, map[string]any{"I": 1000000 + ts, "S": ts, "O1": "Home", "O2": "Away", "SS": 2, "SI": 9, "L": "Fights", "LI": 318137})
+		}
+		body, _ := json.Marshal(map[string]any{"Id": 0, "Success": true, "Value": evs})
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(gz(body))
+	}))
+	defer srv.Close()
+
+	c := NewClient(ClientOptions{
+		Mirrors: []string{srv.Listener.Addr().String()},
+		Timeout: 5 * time.Second,
+		Scheme:  "http",
+	})
+	// window = 3 days -> 144 possible events; cap 50 forces subdivision
+	evs, err := c.GetAllEvents(context.Background(), 9, EventsParams{}, 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(evs) != 144 {
+		t.Fatalf("want 144 events, got %d", len(evs))
+	}
+	// dedupe check: ids must be unique
+	seen := map[int64]bool{}
+	for _, e := range evs {
+		if seen[e.ID] {
+			t.Fatalf("duplicate event id %d", e.ID)
+		}
+		seen[e.ID] = true
+	}
+	// sorted by start time
+	for i := 1; i < len(evs); i++ {
+		if evs[i].StartTime.Before(evs[i-1].StartTime) {
+			t.Fatalf("events not sorted at %d", i)
+		}
 	}
 }

@@ -57,12 +57,15 @@ clean model. All endpoints were verified against the live gateway.
 
 ### Query params
 
-- `/sports/{sport}/events?count=50&league=ID&from=UNIX&to=UNIX`
+- `/sports/{sport}/events?count=50&league=ID&from=UNIX&to=UNIX&all=true`
   - `count` — max events (default 50)
   - `league` — comma-separated league ids (passed as `champs`)
-  - `from` / `to` — unix timestamps filtering event start time (`tsFrom`/`tsTo`);
-    the upstream feed caps at ~50 events and sorts by start time, so windowing
-    is the way to reach events further out (e.g. a fight card 2 weeks ahead)
+  - `from` / `to` — unix timestamps filtering event start time (`tsFrom`/`tsTo`)
+  - `all=true` — return **all** events for the sport (next 180 days), paging
+    through time windows internally; windows hitting the ~50-event per-request
+    cap are subdivided recursively until complete, then deduplicated and
+    sorted. Matches the count shown on 1xbet's site (e.g. 88 boxing events,
+    78 UFC events).
 
 ### Sport ids (live-verified)
 

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -166,6 +167,55 @@ type EventsParams struct {
 	Live   bool   // unused on the new gateway (LINE feed); kept for API compat
 	From   int64  // unix ts: earliest start (tsFrom)
 	To     int64  // unix ts: latest start (tsTo)
+}
+
+// GetAllEvents returns ALL events for a sport over the next maxDays days,
+// paging through time windows internally. The upstream feed caps at ~50
+// events per request, so windows that hit the cap are subdivided until
+// complete. Events are deduplicated by id and sorted by start time.
+func (c *Client) GetAllEvents(ctx context.Context, sportID int, p EventsParams, maxDays int) ([]model.Event, error) {
+	if maxDays <= 0 {
+		maxDays = 180
+	}
+	now := time.Now().Unix()
+	var out []model.Event
+	if err := c.collectEvents(ctx, sportID, p, now, now+int64(maxDays)*86400, &out); err != nil {
+		return nil, err
+	}
+	// dedupe by id, keep earliest occurrence
+	seen := map[int64]bool{}
+	dedup := out[:0]
+	for _, e := range out {
+		if !seen[e.ID] {
+			seen[e.ID] = true
+			dedup = append(dedup, e)
+		}
+	}
+	sort.Slice(dedup, func(i, j int) bool { return dedup[i].StartTime.Before(dedup[j].StartTime) })
+	return dedup, nil
+}
+
+// collectEvents fetches events in [from,to), subdividing windows that hit
+// the upstream per-request cap. maxEvents guards against runaway loops.
+func (c *Client) collectEvents(ctx context.Context, sportID int, p EventsParams, from, to int64, out *[]model.Event) error {
+	if to-from < 3600 || len(*out) > 5000 {
+		return nil
+	}
+	p.From, p.To = from, to
+	evs, err := c.GetEvents(ctx, sportID, p)
+	if err != nil {
+		return err
+	}
+	*out = append(*out, evs...)
+	// cap hit -> window may be truncated, subdivide
+	if len(evs) >= 50 {
+		mid := from + (to-from)/2
+		if err := c.collectEvents(ctx, sportID, p, from, mid, out); err != nil {
+			return err
+		}
+		return c.collectEvents(ctx, sportID, p, mid, to, out)
+	}
+	return nil
 }
 
 // GetEvents returns feed events (line/prematch) for a sport.

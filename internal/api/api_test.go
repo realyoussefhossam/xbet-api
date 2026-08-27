@@ -29,6 +29,10 @@ func (s *stubFetcher) GetEvents(_ context.Context, _ int, _ xbet.EventsParams) (
 	return s.events, s.err
 }
 
+func (s *stubFetcher) GetAllEvents(_ context.Context, _ int, _ xbet.EventsParams, _ int) ([]model.Event, error) {
+	return s.events, s.err
+}
+
 func (s *stubFetcher) GetGame(_ context.Context, _ int64) (model.EventDetail, error) {
 	return s.game, s.err
 }
