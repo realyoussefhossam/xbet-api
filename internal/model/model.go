@@ -131,6 +131,7 @@ type RuleChapter struct {
 	ID          int           `json:"id"`
 	Title       string        `json:"title"`
 	Description string        `json:"description,omitempty"` // HTML (chapters only)
+	Subsections []RuleChapter `json:"subsections,omitempty"` // e.g. bet types under "Types of bets"
 	Children    []RuleChapter `json:"children,omitempty"`    // menu only
 }
 

@@ -422,9 +422,16 @@ type rawRuleChapterNode struct {
 
 // rawRuleChapter is one rules chapter's content.
 type rawRuleChapter struct {
-	ID          FlexInt `json:"id"`
+	ID          FlexInt                      `json:"id"`
+	Title       string                       `json:"title"`
+	Description string                       `json:"description"` // HTML
+	Subsections map[string]rawRuleSubsection `json:"rule_subsection"`
+}
+
+type rawRuleSubsection struct {
 	Title       string  `json:"title"`
-	Description string  `json:"description"` // HTML
+	Description string  `json:"description"`
+	Sort        FlexInt `json:"sort"`
 }
 
 // ---- X-Zone (result1xzone) ----

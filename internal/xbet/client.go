@@ -12,6 +12,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -820,6 +821,28 @@ func (c *Client) doHostApp(ctx context.Context, host, ep string, q orderedQuery)
 	return maybeGunzip(body)
 }
 
+// ruleChapterFromRaw converts a raw chapter incl. sorted subsections.
+func ruleChapterFromRaw(ch rawRuleChapter) model.RuleChapter {
+	rc := model.RuleChapter{ID: int(ch.ID), Title: ch.Title, Description: ch.Description}
+	type sub struct {
+		id   int
+		sort int
+		rc   model.RuleChapter
+	}
+	var tmp []sub
+	for idStr, s := range ch.Subsections {
+		id, _ := strconv.Atoi(idStr)
+		tmp = append(tmp, sub{id: id, sort: int(s.Sort), rc: model.RuleChapter{
+			ID: id, Title: s.Title, Description: s.Description,
+		}})
+	}
+	sort.Slice(tmp, func(i, j int) bool { return tmp[i].sort < tmp[j].sort })
+	for _, t := range tmp {
+		rc.Subsections = append(rc.Subsections, t.rc)
+	}
+	return rc
+}
+
 // GetRulesMenu returns the full rules chapter menu.
 func (c *Client) GetRulesMenu(ctx context.Context) ([]model.RuleChapter, error) {
 	body, err := c.doApp(ctx, epRulesMenu, orderedQuery{{"lng", c.lng}})
@@ -855,24 +878,26 @@ func (c *Client) GetRuleChapter(ctx context.Context, chapterID int) (model.RuleC
 		return model.RuleChapter{}, err
 	}
 	var resp struct {
-		Success  bool `json:"success"`
-		Chapters []struct {
-			ID          FlexInt `json:"id"`
-			Title       string  `json:"title"`
-			Description string  `json:"description"`
-		} `json:"chapters"`
+		Success  bool             `json:"success"`
+		Chapters []rawRuleChapter `json:"chapters"`
 	}
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return model.RuleChapter{}, fmt.Errorf("decode rule chapter: %w", err)
 	}
-	for _, ch := range resp.Chapters {
-		if int(ch.ID) == chapterID {
-			return model.RuleChapter{ID: int(ch.ID), Title: ch.Title, Description: ch.Description}, nil
+	var pick func() (model.RuleChapter, bool)
+	pick = func() (model.RuleChapter, bool) {
+		for _, ch := range resp.Chapters {
+			if int(ch.ID) == chapterID {
+				return ruleChapterFromRaw(ch), true
+			}
 		}
+		if len(resp.Chapters) > 0 {
+			return ruleChapterFromRaw(resp.Chapters[0]), true
+		}
+		return model.RuleChapter{}, false
 	}
-	if len(resp.Chapters) > 0 {
-		ch := resp.Chapters[0]
-		return model.RuleChapter{ID: int(ch.ID), Title: ch.Title, Description: ch.Description}, nil
+	if ch, ok := pick(); ok {
+		return ch, nil
 	}
 	return model.RuleChapter{}, fmt.Errorf("chapter %d not found", chapterID)
 }

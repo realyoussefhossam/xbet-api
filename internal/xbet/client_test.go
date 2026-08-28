@@ -506,3 +506,38 @@ func TestGetZoneGame(t *testing.T) {
 		t.Fatalf("bad first event: %+v", evs[0])
 	}
 }
+
+// TestRuleSubsections: chapters like "Types of bets" carry their content in
+// rule_subsection (Single bet, Accumulator, ...) - must be parsed + sorted.
+func TestRuleSubsections(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(gz(loadFixture(t, "rules-chapter-subsections.json")))
+	}))
+	defer srv.Close()
+	c := NewClient(ClientOptions{
+		Mirrors: []string{srv.Listener.Addr().String()},
+		Timeout: 5 * time.Second,
+		Scheme:  "http",
+	})
+	ch, err := c.GetRuleChapter(context.Background(), 31143483)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ch.Subsections) < 2 {
+		t.Fatalf("want subsections, got %d", len(ch.Subsections))
+	}
+	// sorted by sort asc; "Single bet" has sort 1
+	if ch.Subsections[0].Title != "Single bet" {
+		t.Fatalf("first subsection should be Single bet, got %q", ch.Subsections[0].Title)
+	}
+	if !containsStr(ch.Subsections[0].Description, "stake is multiplied by the odds") {
+		t.Fatalf("single bet content missing: %.80s", ch.Subsections[0].Description)
+	}
+	// sorted ascending
+	for i := 1; i < len(ch.Subsections); i++ {
+		if ch.Subsections[i].ID < ch.Subsections[i-1].ID {
+			t.Fatalf("subsections not sorted at %d", i)
+		}
+	}
+}
