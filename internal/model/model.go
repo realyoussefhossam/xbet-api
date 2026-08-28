@@ -87,3 +87,72 @@ type EventDetail struct {
 	Markets  []Market  `json:"markets"`
 	SubGames []SubGame `json:"sub_games,omitempty"`
 }
+
+// ---- results (finished games) ----
+
+// ResultSport is a sport that has results in a window.
+type ResultSport struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	IsTop bool   `json:"is_top,omitempty"`
+}
+
+// ResultChamp is a champ with finished games in a window.
+type ResultChamp struct {
+	ID         int    `json:"id"`
+	Name       string `json:"name"`
+	SportID    int    `json:"sport_id"`
+	GamesCount int    `json:"games_count"`
+}
+
+// ResultGame is a finished game with its final result.
+type ResultGame struct {
+	ID        int64           `json:"id"`
+	SportID   int             `json:"sport_id"`
+	ChampID   int             `json:"champ_id"`
+	ChampName string          `json:"champ_name"`
+	Home      string          `json:"home"`
+	Away      string          `json:"away"`
+	Score     string          `json:"score"` // multi-line result text
+	StartTime time.Time       `json:"start_time"`
+	SubGames  []ResultSubGame `json:"sub_games,omitempty"`
+}
+
+// ResultSubGame is a sub-game score of a finished game (corners, cards...).
+type ResultSubGame struct {
+	Title string `json:"title"`
+	Score string `json:"score"`
+}
+
+// ---- rules (settlement documentation) ----
+
+// RuleChapter is a chapter of the official betting rules.
+type RuleChapter struct {
+	ID          int           `json:"id"`
+	Title       string        `json:"title"`
+	Description string        `json:"description,omitempty"` // HTML (chapters only)
+	Children    []RuleChapter `json:"children,omitempty"`    // menu only
+}
+
+// ---- X-Zone ----
+
+// ZoneGame is a finished game with detailed stats available.
+type ZoneGame struct {
+	ID        int64             `json:"id"`
+	SportID   int               `json:"sport_id"`
+	ChampID   int               `json:"champ_id"`
+	ChampName string            `json:"champ_name"`
+	Home      string            `json:"home"`
+	Away      string            `json:"away"`
+	Score     string            `json:"score"`
+	StartTime time.Time         `json:"start_time"`
+	MatchInfo map[string]string `json:"match_info,omitempty"`
+}
+
+// ZoneEvent is one minute-by-minute event of a finished game.
+type ZoneEvent struct {
+	Order    int    `json:"order"`
+	Time     string `json:"time"`
+	Opponent int    `json:"opponent"` // 1 = home, 2 = away
+	Event    string `json:"event"`
+}

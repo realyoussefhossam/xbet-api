@@ -26,6 +26,14 @@ type Fetcher interface {
 	GetLiveEvents(ctx context.Context, sportID, count int) ([]model.Event, error)
 	GetGame(ctx context.Context, eventID int64) (model.EventDetail, error)
 	GetLiveGame(ctx context.Context, gameID int64) (model.EventDetail, error)
+	GetResultSports(ctx context.Context, from, to int64) ([]model.ResultSport, error)
+	GetResultChamps(ctx context.Context, sportIDs []int, from, to int64) ([]model.ResultChamp, error)
+	GetResultGames(ctx context.Context, champID int, from, to int64) ([]model.ResultGame, error)
+	GetRulesMenu(ctx context.Context) ([]model.RuleChapter, error)
+	GetRuleChapter(ctx context.Context, chapterID int) (model.RuleChapter, error)
+	GetZoneChamps(ctx context.Context, sportIDs []int, from, to int64) ([]model.ResultChamp, error)
+	GetZoneGames(ctx context.Context, champIDs []int, from, to int64) ([]model.ZoneGame, error)
+	GetZoneGame(ctx context.Context, gameID int64, from, to int64) ([]model.ZoneEvent, error)
 	Raw(ctx context.Context, path string, q url.Values) ([]byte, error)
 }
 
@@ -37,6 +45,7 @@ type Server struct {
 	champs    *cache.Cache
 	events    *cache.Cache
 	games     *cache.Cache
+	rules     *cache.Cache
 	sports    []model.Sport
 	watcher   *locks.Watcher
 }
@@ -69,6 +78,7 @@ func New(opts Options) *Server {
 		champs:    cache.New(opts.ChampsTTL),
 		events:    cache.New(opts.EventsTTL),
 		games:     cache.New(opts.GamesTTL),
+		rules:     cache.New(24 * time.Hour), // rules are static
 		sports:    opts.Sports,
 		watcher:   opts.Watcher,
 	}
@@ -88,6 +98,15 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /events/{id}/markets", s.handleMarkets)
 	mux.HandleFunc("GET /events/{id}/subgames", s.handleSubGames)
 	mux.HandleFunc("GET /events/{id}/odds", s.handleOdds)
+	mux.HandleFunc("GET /results/sports", s.handleResultSports)
+	mux.HandleFunc("GET /results/champs", s.handleResultChamps)
+	mux.HandleFunc("GET /results/games", s.handleResultGames)
+	mux.HandleFunc("GET /results/live", s.handleResultLive)
+	mux.HandleFunc("GET /results/zone/champs", s.handleZoneChamps)
+	mux.HandleFunc("GET /results/zone/games", s.handleZoneGames)
+	mux.HandleFunc("GET /results/zone/game", s.handleZoneGame)
+	mux.HandleFunc("GET /rules", s.handleRulesMenu)
+	mux.HandleFunc("GET /rules/{id}", s.handleRuleChapter)
 	mux.HandleFunc("GET /debug/raw", s.handleRaw)
 	return logMiddleware(mux)
 }
@@ -174,6 +193,192 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 			return s.fetcher.GetAllEvents(r.Context(), sportID, params, 180)
 		}
 		return s.fetcher.GetEvents(r.Context(), sportID, params)
+	})
+	if err != nil {
+		writeErr(w, http.StatusBadGateway, fmt.Errorf("upstream: %w", err))
+		return
+	}
+	writeJSON(w, http.StatusOK, v)
+}
+
+// handleResultSports lists sports with results in the (default 24h) window.
+func (s *Server) handleResultSports(w http.ResponseWriter, r *http.Request) {
+	from, to := resultWindow(r)
+	v, err := s.events.GetOrLoad(fmt.Sprintf("results:sports:%d:%d", from, to), func() (any, error) {
+		return s.fetcher.GetResultSports(r.Context(), from, to)
+	})
+	if err != nil {
+		writeErr(w, http.StatusBadGateway, fmt.Errorf("upstream: %w", err))
+		return
+	}
+	writeJSON(w, http.StatusOK, v)
+}
+
+// handleResultChamps lists champs with finished games.
+func (s *Server) handleResultChamps(w http.ResponseWriter, r *http.Request) {
+	from, to := resultWindow(r)
+	sportIDs, err := parseIDList(r.URL.Query().Get("sport"))
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+	key := fmt.Sprintf("results:champs:%v:%d:%d", sportIDs, from, to)
+	v, err := s.events.GetOrLoad(key, func() (any, error) {
+		return s.fetcher.GetResultChamps(r.Context(), sportIDs, from, to)
+	})
+	if err != nil {
+		writeErr(w, http.StatusBadGateway, fmt.Errorf("upstream: %w", err))
+		return
+	}
+	writeJSON(w, http.StatusOK, v)
+}
+
+// handleResultGames returns finished games with final results for a champ.
+func (s *Server) handleResultGames(w http.ResponseWriter, r *http.Request) {
+	from, to := resultWindow(r)
+	champID, err := strconv.Atoi(r.URL.Query().Get("champ"))
+	if err != nil || champID <= 0 {
+		writeErr(w, http.StatusBadRequest, fmt.Errorf("champ is required (from /results/champs)"))
+		return
+	}
+	key := fmt.Sprintf("results:games:%d:%d:%d", champID, from, to)
+	v, err := s.events.GetOrLoad(key, func() (any, error) {
+		return s.fetcher.GetResultGames(r.Context(), champID, from, to)
+	})
+	if err != nil {
+		writeErr(w, http.StatusBadGateway, fmt.Errorf("upstream: %w", err))
+		return
+	}
+	writeJSON(w, http.StatusOK, v)
+}
+
+// resultWindow parses ?from/?to or returns the standard 24h window.
+func resultWindow(r *http.Request) (int64, int64) {
+	f := r.URL.Query().Get("from")
+	if f != "" {
+		if n, err := strconv.ParseInt(f, 10, 64); err == nil && n > 0 {
+			to, _ := strconv.ParseInt(r.URL.Query().Get("to"), 10, 64)
+			if to > n {
+				return n, to
+			}
+		}
+	}
+	return xbet.ResultWindow(time.Now())
+}
+
+// parseIDList parses "1,9,189" into ints.
+func parseIDList(s string) ([]int, error) {
+	if s == "" {
+		return nil, nil
+	}
+	parts := strings.Split(s, ",")
+	out := make([]int, 0, len(parts))
+	for _, p := range parts {
+		n, err := strconv.Atoi(strings.TrimSpace(p))
+		if err != nil {
+			return nil, fmt.Errorf("invalid id %q", p)
+		}
+		out = append(out, n)
+	}
+	return out, nil
+}
+
+// handleResultLive returns in-play games with scores (the results Live tab).
+func (s *Server) handleResultLive(w http.ResponseWriter, r *http.Request) {
+	count := 40
+	if c := r.URL.Query().Get("count"); c != "" {
+		if n, err := strconv.Atoi(c); err == nil && n > 0 {
+			count = n
+		}
+	}
+	v, err := s.events.GetOrLoad(fmt.Sprintf("live:all:%d", count), func() (any, error) {
+		return s.fetcher.GetLiveEvents(r.Context(), 0, count)
+	})
+	if err != nil {
+		writeErr(w, http.StatusBadGateway, fmt.Errorf("upstream: %w", err))
+		return
+	}
+	writeJSON(w, http.StatusOK, v)
+}
+
+// handleZoneChamps lists champs with zone (detailed stats) games.
+func (s *Server) handleZoneChamps(w http.ResponseWriter, r *http.Request) {
+	from, to := resultWindow(r)
+	sportIDs, err := parseIDList(r.URL.Query().Get("sport"))
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+	key := fmt.Sprintf("zone:champs:%v:%d:%d", sportIDs, from, to)
+	v, err := s.events.GetOrLoad(key, func() (any, error) {
+		return s.fetcher.GetZoneChamps(r.Context(), sportIDs, from, to)
+	})
+	if err != nil {
+		writeErr(w, http.StatusBadGateway, fmt.Errorf("upstream: %w", err))
+		return
+	}
+	writeJSON(w, http.StatusOK, v)
+}
+
+// handleZoneGames lists finished games with zone stats.
+func (s *Server) handleZoneGames(w http.ResponseWriter, r *http.Request) {
+	from, to := resultWindow(r)
+	champIDs, err := parseIDList(r.URL.Query().Get("champ"))
+	if err != nil || len(champIDs) == 0 {
+		writeErr(w, http.StatusBadRequest, fmt.Errorf("champ is required (comma-separated, from /results/zone/champs)"))
+		return
+	}
+	key := fmt.Sprintf("zone:games:%v:%d:%d", champIDs, from, to)
+	v, err := s.events.GetOrLoad(key, func() (any, error) {
+		return s.fetcher.GetZoneGames(r.Context(), champIDs, from, to)
+	})
+	if err != nil {
+		writeErr(w, http.StatusBadGateway, fmt.Errorf("upstream: %w", err))
+		return
+	}
+	writeJSON(w, http.StatusOK, v)
+}
+
+// handleZoneGame returns a finished game's minute-by-minute timeline.
+func (s *Server) handleZoneGame(w http.ResponseWriter, r *http.Request) {
+	from, to := resultWindow(r)
+	id, err := strconv.ParseInt(r.URL.Query().Get("id"), 10, 64)
+	if err != nil || id <= 0 {
+		writeErr(w, http.StatusBadRequest, fmt.Errorf("id is required (game id from /results/zone/games)"))
+		return
+	}
+	key := fmt.Sprintf("zone:game:%d:%d:%d", id, from, to)
+	v, err := s.events.GetOrLoad(key, func() (any, error) {
+		return s.fetcher.GetZoneGame(r.Context(), id, from, to)
+	})
+	if err != nil {
+		writeErr(w, http.StatusBadGateway, fmt.Errorf("upstream: %w", err))
+		return
+	}
+	writeJSON(w, http.StatusOK, v)
+}
+
+// handleRulesMenu returns the official rules chapter menu (cached 24h).
+func (s *Server) handleRulesMenu(w http.ResponseWriter, r *http.Request) {
+	v, err := s.rules.GetOrLoad("rules:menu", func() (any, error) {
+		return s.fetcher.GetRulesMenu(r.Context())
+	})
+	if err != nil {
+		writeErr(w, http.StatusBadGateway, fmt.Errorf("upstream: %w", err))
+		return
+	}
+	writeJSON(w, http.StatusOK, v)
+}
+
+// handleRuleChapter returns one rules chapter (cached 24h).
+func (s *Server) handleRuleChapter(w http.ResponseWriter, r *http.Request) {
+	id, err := pathInt(r, "id")
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+	v, err := s.rules.GetOrLoad(fmt.Sprintf("rules:%d", id), func() (any, error) {
+		return s.fetcher.GetRuleChapter(r.Context(), id)
 	})
 	if err != nil {
 		writeErr(w, http.StatusBadGateway, fmt.Errorf("upstream: %w", err))

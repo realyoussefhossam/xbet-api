@@ -41,6 +41,44 @@ func (s *stubFetcher) GetLiveGame(_ context.Context, _ int64) (model.EventDetail
 	return s.game, s.err
 }
 
+func (s *stubFetcher) GetResultSports(_ context.Context, _, _ int64) ([]model.ResultSport, error) {
+	return []model.ResultSport{{ID: 1, Name: "Football"}}, s.err
+}
+
+func (s *stubFetcher) GetResultChamps(_ context.Context, _ []int, _, _ int64) ([]model.ResultChamp, error) {
+	return []model.ResultChamp{{ID: 127733, Name: "Spain. La Liga", SportID: 1, GamesCount: 3}}, s.err
+}
+
+func (s *stubFetcher) GetResultGames(_ context.Context, _ int, _, _ int64) ([]model.ResultGame, error) {
+	return []model.ResultGame{{
+		ID: 747759846, SportID: 1, ChampID: 127733, ChampName: "Spain. La Liga",
+		Home: "Barcelona", Away: "Athletic Bilbao", Score: "2:0 (1:0,1:0)",
+	}}, s.err
+}
+
+func (s *stubFetcher) GetRulesMenu(_ context.Context) ([]model.RuleChapter, error) {
+	return []model.RuleChapter{{ID: 49035435, Title: "Match Results, Dates and Starting Times"}}, s.err
+}
+
+func (s *stubFetcher) GetRuleChapter(_ context.Context, id int) (model.RuleChapter, error) {
+	return model.RuleChapter{ID: id, Title: "Match Results", Description: "<p>Bet settlement may be revised...</p>"}, s.err
+}
+
+func (s *stubFetcher) GetZoneChamps(_ context.Context, _ []int, _, _ int64) ([]model.ResultChamp, error) {
+	return []model.ResultChamp{{ID: 127733, Name: "Spain. La Liga", SportID: 1, GamesCount: 1}}, s.err
+}
+
+func (s *stubFetcher) GetZoneGames(_ context.Context, _ []int, _, _ int64) ([]model.ZoneGame, error) {
+	return []model.ZoneGame{{
+		ID: 747759846, SportID: 1, ChampID: 127733, ChampName: "Spain. La Liga",
+		Home: "Barcelona", Away: "Athletic Bilbao", Score: "2:0 (1:0,1:0)",
+	}}, s.err
+}
+
+func (s *stubFetcher) GetZoneGame(_ context.Context, _ int64, _, _ int64) ([]model.ZoneEvent, error) {
+	return []model.ZoneEvent{{Order: 1, Time: "01:00", Opponent: 1, Event: "Offside"}}, s.err
+}
+
 func (s *stubFetcher) GetGame(_ context.Context, _ int64) (model.EventDetail, error) {
 	return s.game, s.err
 }

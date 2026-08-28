@@ -631,3 +631,365 @@ func maybeGunzip(b []byte) ([]byte, error) {
 	defer zr.Close()
 	return io.ReadAll(zr)
 }
+
+// ---- results API ----
+
+const (
+	epResultSports = "/service-api/result/web/api/v2/sports"
+	epResultChamps = "/service-api/result/web/api/v2/champs"
+	epResultGames  = "/service-api/result/web/api/v3/games"
+)
+
+// ResultWindow returns the 24h results window: dateTo is now rounded up to
+// the minute, dateFrom is exactly 24h earlier. The results API 400s on any
+// other window shape.
+func ResultWindow(now time.Time) (from, to int64) {
+	to = (now.Unix() + 59) / 60 * 60
+	from = to - 86400
+	return
+}
+
+// GetResultSports lists sports that have results in the window.
+func (c *Client) GetResultSports(ctx context.Context, from, to int64) ([]model.ResultSport, error) {
+	q := orderedQuery{
+		{"cyberFlag", "4"},
+		{"dateFrom", fmt.Sprint(from)},
+		{"dateTo", fmt.Sprint(to)},
+		{"gr", "1557"},
+		{"lng", c.lng},
+		{"ref", "1"},
+	}
+	body, err := c.do(ctx, epResultSports, q)
+	if err != nil {
+		return nil, err
+	}
+	var resp rawResultSports
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("decode result sports: %w", err)
+	}
+	out := make([]model.ResultSport, 0, len(resp.Items))
+	for _, s := range resp.Items {
+		out = append(out, model.ResultSport{ID: int(s.ID), Name: s.Name, IsTop: s.IsTop})
+	}
+	return out, nil
+}
+
+// GetResultChamps lists champs with finished games in the window.
+func (c *Client) GetResultChamps(ctx context.Context, sportIDs []int, from, to int64) ([]model.ResultChamp, error) {
+	sports := ""
+	for i, id := range sportIDs {
+		if i > 0 {
+			sports += ","
+		}
+		sports += fmt.Sprint(id)
+	}
+	q := orderedQuery{
+		{"dateFrom", fmt.Sprint(from)},
+		{"dateTo", fmt.Sprint(to)},
+		{"lng", c.lng},
+		{"ref", "1"},
+	}
+	if sports != "" {
+		q = append(q, kv{"sportIds", sports})
+	}
+	body, err := c.do(ctx, epResultChamps, q)
+	if err != nil {
+		return nil, err
+	}
+	var resp rawResultChamps
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("decode result champs: %w", err)
+	}
+	out := make([]model.ResultChamp, 0, len(resp.Items))
+	for _, ch := range resp.Items {
+		out = append(out, model.ResultChamp{
+			ID: int(ch.ID), Name: ch.Name, SportID: int(ch.SportID), GamesCount: int(ch.GamesCount),
+		})
+	}
+	return out, nil
+}
+
+// GetResultGames returns finished games (with final results) of a champ.
+func (c *Client) GetResultGames(ctx context.Context, champID int, from, to int64) ([]model.ResultGame, error) {
+	q := orderedQuery{
+		{"champId", fmt.Sprint(champID)},
+		{"dateFrom", fmt.Sprint(from)},
+		{"dateTo", fmt.Sprint(to)},
+		{"lng", c.lng},
+		{"ref", "1"},
+	}
+	body, err := c.do(ctx, epResultGames, q)
+	if err != nil {
+		return nil, err
+	}
+	var resp rawResultGames
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("decode result games: %w", err)
+	}
+	out := make([]model.ResultGame, 0, len(resp.Items))
+	for _, g := range resp.Items {
+		rg := model.ResultGame{
+			ID:        int64(g.ID),
+			SportID:   int(g.SportID),
+			ChampID:   int(g.ChampID),
+			ChampName: g.ChampName,
+			Home:      g.Opp1,
+			Away:      g.Opp2,
+			Score:     g.Score,
+		}
+		if ts := int64(g.DateStart); ts > 0 {
+			rg.StartTime = time.Unix(ts, 0).UTC()
+		}
+		for _, sg := range g.SubGame {
+			rg.SubGames = append(rg.SubGames, model.ResultSubGame{Title: sg.Title, Score: sg.Score})
+		}
+		out = append(out, rg)
+	}
+	return out, nil
+}
+
+// ---- rules API ----
+
+const (
+	epRulesMenu = "/agreements-legacy-api/information/rulesmenu"
+	epRuleByID  = "/agreements-legacy-api/information/rules"
+)
+
+// appHeaders are required by the agreements-legacy-api.
+func (c *Client) doApp(ctx context.Context, path string, q orderedQuery) ([]byte, error) {
+	var lastErr error
+	for _, host := range c.pool.Hosts() {
+		body, err := c.doHostApp(ctx, host, path, q)
+		if err == nil {
+			c.pool.ReportSuccess(host)
+			return body, nil
+		}
+		lastErr = err
+		var hse *httpStatusError
+		if !errors.As(err, &hse) {
+			c.pool.ReportFailure(host)
+		}
+	}
+	return nil, fmt.Errorf("all mirrors failed for %s: %w", path, lastErr)
+}
+
+func (c *Client) doHostApp(ctx context.Context, host, ep string, q orderedQuery) ([]byte, error) {
+	if err := c.bootstrap(ctx, host); err != nil {
+		return nil, fmt.Errorf("bootstrap %s: %w", host, err)
+	}
+	path := ep
+	if !strings.HasPrefix(path, "/") {
+		path = c.basePath + path
+	}
+	u := c.scheme + "://" + host + path
+	if len(q) > 0 {
+		u += "?" + q.encode()
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", defaultUA)
+	req.Header.Set("Accept", "application/json, text/plain, */*")
+	req.Header.Set("X-Requested-With", "XMLHttpRequest")
+	req.Header.Set("Accept-Encoding", "gzip")
+	req.Header.Set("x-language", c.lng)
+	req.Header.Set("x-svc-source", "__BETTING_APP__")
+	req.Header.Set("x-app-n", "__BETTING_APP__")
+
+	jar := c.jarFor(host)
+	for _, ck := range jar.Cookies(req.URL) {
+		req.AddCookie(ck)
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if jar != nil {
+		jar.SetCookies(req.URL, resp.Cookies())
+	}
+	if resp.StatusCode != http.StatusOK {
+		io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
+		return nil, fmt.Errorf("%s: %w", host, &httpStatusError{status: resp.StatusCode})
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return maybeGunzip(body)
+}
+
+// GetRulesMenu returns the full rules chapter menu.
+func (c *Client) GetRulesMenu(ctx context.Context) ([]model.RuleChapter, error) {
+	body, err := c.doApp(ctx, epRulesMenu, orderedQuery{{"lng", c.lng}})
+	if err != nil {
+		return nil, err
+	}
+	var resp struct {
+		MenuList []rawRuleChapterNode `json:"menu_list"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("decode rules menu: %w", err)
+	}
+	var walk func(nodes []rawRuleChapterNode) []model.RuleChapter
+	walk = func(nodes []rawRuleChapterNode) []model.RuleChapter {
+		out := make([]model.RuleChapter, 0, len(nodes))
+		for _, n := range nodes {
+			rc := model.RuleChapter{ID: int(n.ID), Title: n.Title}
+			if len(n.Children) > 0 {
+				rc.Children = walk(n.Children)
+			}
+			out = append(out, rc)
+		}
+		return out
+	}
+	return walk(resp.MenuList), nil
+}
+
+// GetRuleChapter returns one chapter's content (HTML description).
+func (c *Client) GetRuleChapter(ctx context.Context, chapterID int) (model.RuleChapter, error) {
+	q := orderedQuery{{"lng", c.lng}}
+	body, err := c.doApp(ctx, fmt.Sprintf("%s/%d", epRuleByID, chapterID), q)
+	if err != nil {
+		return model.RuleChapter{}, err
+	}
+	var resp struct {
+		Success  bool `json:"success"`
+		Chapters []struct {
+			ID          FlexInt `json:"id"`
+			Title       string  `json:"title"`
+			Description string  `json:"description"`
+		} `json:"chapters"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return model.RuleChapter{}, fmt.Errorf("decode rule chapter: %w", err)
+	}
+	for _, ch := range resp.Chapters {
+		if int(ch.ID) == chapterID {
+			return model.RuleChapter{ID: int(ch.ID), Title: ch.Title, Description: ch.Description}, nil
+		}
+	}
+	if len(resp.Chapters) > 0 {
+		ch := resp.Chapters[0]
+		return model.RuleChapter{ID: int(ch.ID), Title: ch.Title, Description: ch.Description}, nil
+	}
+	return model.RuleChapter{}, fmt.Errorf("chapter %d not found", chapterID)
+}
+
+// ---- X-Zone (result1xzone/web/api/v1) ----
+
+const (
+	epZoneSports = "/service-api/result1xzone/web/api/v1/sports"
+	epZoneChamps = "/service-api/result1xzone/web/api/v1/champs"
+	epZoneGames  = "/service-api/result1xzone/web/api/v1/games"
+	epZoneGame   = "/service-api/result1xzone/web/api/v1/game"
+)
+
+// GetZoneChamps lists champs with zone (detailed stats) games in the window.
+func (c *Client) GetZoneChamps(ctx context.Context, sportIDs []int, from, to int64) ([]model.ResultChamp, error) {
+	sports := ""
+	for i, id := range sportIDs {
+		if i > 0 {
+			sports += ","
+		}
+		sports += fmt.Sprint(id)
+	}
+	q := orderedQuery{
+		{"dateFrom", fmt.Sprint(from)},
+		{"dateTo", fmt.Sprint(to)},
+		{"lng", c.lng},
+		{"ref", "1"},
+	}
+	if sports != "" {
+		q = append(q, kv{"sportIds", sports})
+	}
+	body, err := c.do(ctx, epZoneChamps, q)
+	if err != nil {
+		return nil, err
+	}
+	var resp rawResultChamps
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("decode zone champs: %w", err)
+	}
+	out := make([]model.ResultChamp, 0, len(resp.Items))
+	for _, ch := range resp.Items {
+		out = append(out, model.ResultChamp{
+			ID: int(ch.ID), Name: ch.Name, SportID: int(ch.SportID), GamesCount: int(ch.GamesCount),
+		})
+	}
+	return out, nil
+}
+
+// GetZoneGames lists finished games with zone stats for champs.
+func (c *Client) GetZoneGames(ctx context.Context, champIDs []int, from, to int64) ([]model.ZoneGame, error) {
+	ids := ""
+	for i, id := range champIDs {
+		if i > 0 {
+			ids += ","
+		}
+		ids += fmt.Sprint(id)
+	}
+	q := orderedQuery{
+		{"champIds", ids},
+		{"dateFrom", fmt.Sprint(from)},
+		{"dateTo", fmt.Sprint(to)},
+		{"lng", c.lng},
+		{"ref", "1"},
+	}
+	body, err := c.do(ctx, epZoneGames, q)
+	if err != nil {
+		return nil, err
+	}
+	var resp struct {
+		Count int           `json:"count"`
+		Items []rawZoneGame `json:"items"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("decode zone games: %w", err)
+	}
+	out := make([]model.ZoneGame, 0, len(resp.Items))
+	for _, g := range resp.Items {
+		zg := model.ZoneGame{
+			ID: int64(g.ID), SportID: int(g.SportID), ChampID: int(g.ChampID),
+			ChampName: g.ChampName, Home: g.Opp1, Away: g.Opp2, Score: g.Score,
+			MatchInfo: g.MatchInfos,
+		}
+		if ts := int64(g.DateStart); ts > 0 {
+			zg.StartTime = time.Unix(ts, 0).UTC()
+		}
+		out = append(out, zg)
+	}
+	return out, nil
+}
+
+// GetZoneGame returns a finished game's minute-by-minute timeline.
+func (c *Client) GetZoneGame(ctx context.Context, gameID int64, from, to int64) ([]model.ZoneEvent, error) {
+	q := orderedQuery{
+		{"gameId", fmt.Sprint(gameID)},
+		{"dateFrom", fmt.Sprint(from)},
+		{"dateTo", fmt.Sprint(to)},
+		{"lng", c.lng},
+		{"ref", "1"},
+	}
+	body, err := c.do(ctx, epZoneGame, q)
+	if err != nil {
+		return nil, err
+	}
+	var resp struct {
+		Count int                 `json:"count"`
+		Items []rawZoneGameDetail `json:"items"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("decode zone game: %w", err)
+	}
+	var out []model.ZoneEvent
+	for _, g := range resp.Items {
+		for _, e := range g.Stats {
+			out = append(out, model.ZoneEvent{
+				Order: int(e.EventOrder), Time: e.Time, Opponent: int(e.OppNumber), Event: strings.TrimSpace(e.Event),
+			})
+		}
+	}
+	return out, nil
+}

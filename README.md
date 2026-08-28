@@ -54,6 +54,14 @@ clean model. All endpoints were verified against the live gateway.
 | GET | `/live/events?count=40` | **all in-play events across every sport** (scores + main odds) |
 | GET | `/events/{id}/markets` | full event: all markets + all odds (line **or live**) |
 | GET | `/events/{id}/subgames` | attached sub-games ("Special bets", "Knockdowns") — each fetchable via `/events/{subgame-id}/markets` |
+| GET | `/results/sports` | sports with finished games (last 24h) |
+| GET | `/results/champs?sport=1,9,189` | champs with finished games + counts |
+| GET | `/results/games?champ=127733` | **final results**: scores, winner, round, method, sub-game scores |
+| GET | `/results/live` | in-play games with scores (the results page's Live tab) |
+| GET | `/results/zone/champs?sport=1` | champs with X-Zone (detailed stats) games |
+| GET | `/results/zone/games?champ=127733` | finished games with zone stats + match info |
+| GET | `/results/zone/game?id=747759846` | minute-by-minute event timeline of a finished game |
+| GET | `/rules` · `/rules/{id}` | official settlement rules: chapter menu + content (cached 24h) |
 | GET | `/events/{id}/odds` | main 1X2 odds snapshot (from markets) |
 | GET | `/debug/raw?path=GetGameZip&id=...` | raw 1xbet JSON passthrough (for verifying mappings) |
 
@@ -202,6 +210,40 @@ Each SSE message is `event: lock` / `event: unlock` with a JSON body
 (timestamp, event, market, outcome, odds, score). The watcher replays
 recent history on connect, forgets games that leave the live feed, and
 never demotes mirrors on HTTP rejections.
+
+## Results (finished games)
+
+1xbet's results API (`result/web/api`) exposes **final results** — the
+settlement data: scores, winners, round + method for fights, sub-game scores
+(corners, cards, shots...).
+
+```bash
+# sports with results in the last 24h:
+curl 'localhost:8080/results/sports'
+
+# champs with finished games (counts included):
+curl 'localhost:8080/results/champs?sport=9,189'
+
+# final results of a champ:
+curl 'localhost:8080/results/games?champ=2551892'
+# -> "Darrius Flowers vs Hayisaer Maheshate: Player Hayisaer Maheshate Wins,
+#    In round 1 of 3, Winning method: retirement/corner retirement"
+```
+
+Reverse-engineered quirks:
+
+- The window must be **exactly 24h**: `dateTo` = now rounded up to the
+  minute, `dateFrom` = `dateTo - 86400`. Any other shape returns 400.
+- Fight results embed winner/round/method in the multi-line `score` field
+  (e.g. `"Player X Wins\nIn round 2 of 4 ...\nWinning method: by KO"`).
+- Football scores include halves: `2:0 (1:0,1:0)`; sub-game scores are in
+  the `sub_games` array.
+- The results API is rate-limited like the v3 live feed; mirrors are never
+  demoted on its HTTP rejections.
+
+Combined with the **settlement rules** (1xbet's official rules are fetchable
+at `agreements-legacy-api/information/rulesmenu` + `/information/rules/{id}`
+with app headers) and our odds/lock data, per-market won/lost is computable.
 
 ## Run
 

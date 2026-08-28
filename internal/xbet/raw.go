@@ -347,3 +347,110 @@ type rawLiveGameEvents struct {
 	Kind              FlexInt        `json:"kind"`
 	Blocked           bool           `json:"blocked"` // game locked
 }
+
+// ---- results API (result/web/api) ----
+
+// rawResultSports is the response of v2/sports.
+type rawResultSports struct {
+	Count int              `json:"count"`
+	Items []rawResultSport `json:"items"`
+}
+
+type rawResultSport struct {
+	ID    FlexInt `json:"id"`
+	Name  string  `json:"name"`
+	IsTop bool    `json:"isTop"`
+}
+
+// rawResultChamps is the response of v2/champs.
+type rawResultChamps struct {
+	Count int              `json:"count"`
+	Items []rawResultChamp `json:"items"`
+}
+
+type rawResultChamp struct {
+	ID         FlexInt `json:"id"`
+	Name       string  `json:"name"`
+	SportID    FlexInt `json:"sportId"`
+	GamesCount FlexInt `json:"gamesCount"`
+	Image      string  `json:"image"`
+}
+
+// rawResultGames is the response of v3/games (finished games).
+type rawResultGames struct {
+	Count int             `json:"count"`
+	Items []rawResultGame `json:"items"`
+}
+
+type rawResultGame struct {
+	ID           FlexInt            `json:"id"`
+	SportID      FlexInt            `json:"sportId"`
+	ChampID      FlexInt            `json:"champId"`
+	ChampName    string             `json:"champName"`
+	Opp1         string             `json:"opp1"`
+	Opp2         string             `json:"opp2"`
+	Score        string             `json:"score"` // multi-line: winner / round / method
+	DopInfo      string             `json:"dopInfo"`
+	HasSubGame   bool               `json:"hasSubGame"`
+	DateStart    FlexInt            `json:"dateStart"`
+	CountSubGame FlexInt            `json:"countSubGame"`
+	SubGame      []rawResultSubGame `json:"subGame"`
+}
+
+type rawResultSubGame struct {
+	Title string `json:"title"`
+	Score string `json:"score"`
+}
+
+// ---- rules API (agreements-legacy-api) ----
+
+// rawRuleMenu is the rules chapter menu.
+type rawRuleMenu struct {
+	Chapters []rawRuleChapterNode `json:"chapters"`
+}
+
+type rawRuleChapterNode struct {
+	ID       FlexInt              `json:"id"`
+	Title    string               `json:"title"`
+	Sort     FlexInt              `json:"sort"`
+	Link     string               `json:"link"`
+	Source   string               `json:"source"`
+	Tags     []string             `json:"tags"`
+	Segment  string               `json:"segment"`
+	Children []rawRuleChapterNode `json:"children,omitempty"`
+}
+
+// rawRuleChapter is one rules chapter's content.
+type rawRuleChapter struct {
+	ID          FlexInt `json:"id"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"` // HTML
+}
+
+// ---- X-Zone (result1xzone) ----
+
+// rawZoneGame is one zone game (finished game with stats availability).
+type rawZoneGame struct {
+	ID         FlexInt           `json:"id"`
+	SportID    FlexInt           `json:"sportId"`
+	ChampID    FlexInt           `json:"champId"`
+	ChampName  string            `json:"champName"`
+	Opp1       string            `json:"opp1"`
+	Opp2       string            `json:"opp2"`
+	Score      string            `json:"score"`
+	DateStart  FlexInt           `json:"dateStart"`
+	MatchInfos map[string]string `json:"matchInfos"`
+}
+
+// rawZoneGameDetail is one zone game with its minute-by-minute timeline.
+type rawZoneGameDetail struct {
+	ID    FlexInt        `json:"id"`
+	Stats []rawZoneEvent `json:"stats"`
+}
+
+type rawZoneEvent struct {
+	EventOrder FlexInt `json:"eventOrder"`
+	Time       string  `json:"time"`
+	OppNumber  FlexInt `json:"oppNumber"`
+	Event      string  `json:"event"`
+}

@@ -1,0 +1,20 @@
+{
+ "count": 3,
+ "items": [
+  {
+   "id": 1,
+   "name": "Football",
+   "isTop": true
+  },
+  {
+   "id": 9,
+   "name": "Boxing",
+   "isTop": false
+  },
+  {
+   "id": 189,
+   "name": "UFC",
+   "isTop": false
+  }
+ ]
+}

@@ -1,0 +1,18 @@
+{
+ "count": 2,
+ "items": [
+  {
+   "id": 127733,
+   "name": "Spain. La Liga",
+   "sportId": 1,
+   "gamesCount": 3
+  },
+  {
+   "id": 2551892,
+   "name": "Road to UFC",
+   "image": "x.png",
+   "sportId": 189,
+   "gamesCount": 9
+  }
+ ]
+}

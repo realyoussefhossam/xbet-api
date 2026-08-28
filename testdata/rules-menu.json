@@ -1,0 +1,58 @@
+{
+ "success": true,
+ "menu_list": [
+  {
+   "id": 49035437,
+   "sort": 1,
+   "li_number": 1,
+   "title": "General Terms and Definitions",
+   "link": "/information/rules/1",
+   "source": "/information/showrule?rule_id=49035437",
+   "tags": [
+    "terms"
+   ],
+   "segment": "1",
+   "dateEdit": "2026-08-19T10:20:42"
+  },
+  {
+   "id": 49035433,
+   "sort": 8,
+   "li_number": 8,
+   "title": "Live Betting",
+   "link": "/information/rules/8",
+   "source": "/information/showrule?rule_id=49035433",
+   "tags": [
+    "terms"
+   ],
+   "segment": "8",
+   "dateEdit": "2026-08-19T10:20:42"
+  },
+  {
+   "id": 49035435,
+   "sort": 9,
+   "li_number": 9,
+   "title": "Match Results, Dates and Starting Times",
+   "link": "/information/rules/9",
+   "source": "/information/showrule?rule_id=49035435",
+   "tags": [
+    "terms"
+   ],
+   "segment": "9",
+   "dateEdit": "2026-08-19T10:20:42"
+  },
+  {
+   "id": 49035409,
+   "sort": 11,
+   "li_number": 11,
+   "title": "Available Markets (Оutcomes)",
+   "link": "/information/rules/11",
+   "source": "/information/showrule?rule_id=49035409",
+   "tags": [
+    "event_group_help",
+    "terms"
+   ],
+   "segment": "11",
+   "dateEdit": "2026-08-19T10:20:42"
+  }
+ ]
+}

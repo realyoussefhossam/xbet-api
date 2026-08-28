@@ -1,0 +1,65 @@
+{
+ "count": 9,
+ "items": [
+  {
+   "id": 747325438,
+   "sportId": 189,
+   "champId": 2551892,
+   "champName": "Road to UFC",
+   "opp1": "Darrius Flowers",
+   "opp2": "Hayisaer Maheshate",
+   "opp1Images": [
+    "767ef093161e281b3fc0dcbb9388755a.png"
+   ],
+   "opp2Images": [
+    "9bfcf7b6893e88fbbebf831b91b6c026.png"
+   ],
+   "opp1Ids": [
+    7289765
+   ],
+   "opp2Ids": [
+    6530791
+   ],
+   "score": "Player Hayisaer Maheshate Wins\nIn round 1 of 3 (round not completed, in the first half)\nWinning method: retirement/corner retirement\n",
+   "dopInfo": "",
+   "dateStart": 1787917500,
+   "matchInfos": {
+    "2": "Shanghai Indoor Stadium (Shanghai)"
+   },
+   "gameTypeName": "",
+   "gameVidName": "",
+   "stadiumId": 15197,
+   "champCountry": 225
+  },
+  {
+   "id": 747325439,
+   "sportId": 189,
+   "champId": 2551892,
+   "champName": "Road to UFC",
+   "opp1": "Treston Vines",
+   "opp2": "Yilizhati Maimaitijiang",
+   "opp1Images": [
+    "da45cd9079f9210d24c62b1739812146.png"
+   ],
+   "opp2Images": [
+    "415cbf03e1db12a03135f3ce42e24f26.png"
+   ],
+   "opp1Ids": [
+    9885759
+   ],
+   "opp2Ids": [
+    10849824
+   ],
+   "score": "Draw\nFull fight (3 rounds)\n",
+   "dopInfo": "",
+   "dateStart": 1787916300,
+   "matchInfos": {
+    "2": "Shanghai Indoor Stadium (Shanghai)"
+   },
+   "gameTypeName": "",
+   "gameVidName": "",
+   "stadiumId": 15197,
+   "champCountry": 225
+  }
+ ]
+}

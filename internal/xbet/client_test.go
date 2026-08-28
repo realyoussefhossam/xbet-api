@@ -295,3 +295,214 @@ func TestGetLiveGame(t *testing.T) {
 		t.Fatalf("bad markets: %+v", d.Markets)
 	}
 }
+
+// results API: fixtures served per endpoint path
+func newResultsTestClient(t *testing.T) *Client {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var fixture string
+		switch {
+		case containsStr(r.URL.Path, "v2/sports"):
+			fixture = "results-sports.json"
+		case containsStr(r.URL.Path, "v2/champs"):
+			fixture = "results-champs.json"
+		case containsStr(r.URL.Path, "v3/games"):
+			fixture = "results-games.json"
+		default:
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(gz(loadFixture(t, fixture)))
+	}))
+	t.Cleanup(srv.Close)
+	return NewClient(ClientOptions{
+		Mirrors: []string{srv.Listener.Addr().String()},
+		Timeout: 5 * time.Second,
+		Scheme:  "http",
+	})
+}
+
+func TestResultWindow(t *testing.T) {
+	now := time.Unix(1787940123, 0)
+	from, to := ResultWindow(now)
+	if to != 1787940180 {
+		t.Fatalf("to = %d, want 1787940180 (rounded up to minute)", to)
+	}
+	if to-from != 86400 {
+		t.Fatalf("window must be exactly 24h, got %d", to-from)
+	}
+}
+
+func TestGetResultSports(t *testing.T) {
+	c := newResultsTestClient(t)
+	from, to := ResultWindow(time.Now())
+	ss, err := c.GetResultSports(context.Background(), from, to)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ss) != 3 || ss[0].Name != "Football" {
+		t.Fatalf("bad sports: %+v", ss)
+	}
+}
+
+func TestGetResultChamps(t *testing.T) {
+	c := newResultsTestClient(t)
+	from, to := ResultWindow(time.Now())
+	cs, err := c.GetResultChamps(context.Background(), []int{1, 189}, from, to)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cs) != 2 || cs[0].ID != 127733 || cs[0].GamesCount != 3 {
+		t.Fatalf("bad champs: %+v", cs)
+	}
+}
+
+func TestGetResultGames(t *testing.T) {
+	c := newResultsTestClient(t)
+	from, to := ResultWindow(time.Now())
+	gs, err := c.GetResultGames(context.Background(), 2551892, from, to)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(gs) != 2 {
+		t.Fatalf("want 2 games, got %d", len(gs))
+	}
+	g := gs[0]
+	if g.Home != "Darrius Flowers" || g.Away != "Hayisaer Maheshate" {
+		t.Fatalf("bad teams: %+v", g)
+	}
+	if !containsStr(g.Score, "Wins") {
+		t.Fatalf("want winner in score, got %q", g.Score)
+	}
+}
+
+// rules API fixtures
+func newRulesTestClient(t *testing.T) *Client {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var fixture string
+		switch {
+		case containsStr(r.URL.Path, "rulesmenu"):
+			fixture = "rules-menu.json"
+		case containsStr(r.URL.Path, "/information/rules/"):
+			fixture = "rules-chapter.json"
+		default:
+			http.NotFound(w, r)
+			return
+		}
+		// verify the required app headers are sent
+		if r.Header.Get("x-language") == "" || r.Header.Get("x-svc-source") == "" {
+			http.Error(w, "missing app headers", http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(gz(loadFixture(t, fixture)))
+	}))
+	t.Cleanup(srv.Close)
+	return NewClient(ClientOptions{
+		Mirrors: []string{srv.Listener.Addr().String()},
+		Timeout: 5 * time.Second,
+		Scheme:  "http",
+	})
+}
+
+func TestGetRulesMenu(t *testing.T) {
+	c := newRulesTestClient(t)
+	menu, err := c.GetRulesMenu(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(menu) < 4 {
+		t.Fatalf("want >=4 top chapters, got %d", len(menu))
+	}
+	found := false
+	for _, ch := range menu {
+		if ch.ID == 49035435 && ch.Title == "Match Results, Dates and Starting Times" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("Match Results chapter missing: %+v", menu)
+	}
+}
+
+func TestGetRuleChapter(t *testing.T) {
+	c := newRulesTestClient(t)
+	ch, err := c.GetRuleChapter(context.Background(), 49035435)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ch.Title != "Match Results, Dates and Starting Times" {
+		t.Fatalf("bad title: %q", ch.Title)
+	}
+	if !containsStr(ch.Description, "Bet settlement") {
+		t.Fatalf("settlement text missing: %.60s", ch.Description)
+	}
+}
+
+// X-Zone fixtures
+func newZoneTestClient(t *testing.T) *Client {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var fixture string
+		switch {
+		case containsStr(r.URL.Path, "result1xzone") && containsStr(r.URL.Path, "/champs"):
+			fixture = "zone-champs.json"
+		case containsStr(r.URL.Path, "result1xzone") && containsStr(r.URL.Path, "/games"):
+			fixture = "zone-games.json"
+		case containsStr(r.URL.Path, "result1xzone") && containsStr(r.URL.Path, "/game"):
+			fixture = "zone-game.json"
+		default:
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(gz(loadFixture(t, fixture)))
+	}))
+	t.Cleanup(srv.Close)
+	return NewClient(ClientOptions{
+		Mirrors: []string{srv.Listener.Addr().String()},
+		Timeout: 5 * time.Second,
+		Scheme:  "http",
+	})
+}
+
+func TestGetZoneChamps(t *testing.T) {
+	c := newZoneTestClient(t)
+	from, to := ResultWindow(time.Now())
+	cs, err := c.GetZoneChamps(context.Background(), []int{1}, from, to)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cs) == 0 || cs[0].ID != 127733 {
+		t.Fatalf("bad zone champs: %+v", cs[:min(2, len(cs))])
+	}
+}
+
+func TestGetZoneGames(t *testing.T) {
+	c := newZoneTestClient(t)
+	from, to := ResultWindow(time.Now())
+	gs, err := c.GetZoneGames(context.Background(), []int{127733}, from, to)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(gs) != 1 || gs[0].Score != "2:0 (1:0,1:0)" {
+		t.Fatalf("bad zone games: %+v", gs)
+	}
+	if gs[0].MatchInfo["11"] != "Spain" {
+		t.Fatalf("match info missing: %+v", gs[0].MatchInfo)
+	}
+}
+
+func TestGetZoneGame(t *testing.T) {
+	c := newZoneTestClient(t)
+	from, to := ResultWindow(time.Now())
+	evs, err := c.GetZoneGame(context.Background(), 747759846, from, to)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(evs) < 10 {
+		t.Fatalf("want timeline events, got %d", len(evs))
+	}
+	if evs[0].Event != "Offside" || evs[0].Time != "01:00" {
+		t.Fatalf("bad first event: %+v", evs[0])
+	}
+}
