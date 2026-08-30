@@ -22,7 +22,11 @@ OUT = os.path.join(os.path.dirname(__file__), "..", "internal", "xbet", "data", 
 def fetch(cdn: str, path: str) -> bytes:
     req = urllib.request.Request(cdn + path, headers={"User-Agent": "xbet-api/1.0"})
     with urllib.request.urlopen(req, timeout=30) as r:
-        return r.read()
+        body = r.read()
+    # The CDN serves these files gzip-compressed regardless of Accept-Encoding.
+    if body[:2] == b"\x1f\x8b":
+        return gzip.decompress(body)
+    return body
 
 
 def main() -> None:

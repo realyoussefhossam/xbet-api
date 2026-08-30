@@ -453,3 +453,36 @@ func TestPLOutcomeNames(t *testing.T) {
 		t.Errorf("PL template render: %q", got)
 	}
 }
+
+// TestWin2WayFallback: group 8389 ("Win (2Way)", 2-way winner market for
+// combat sports) has no template in 1xbet's dictionary yet — the base
+// fallback must name it and its outcomes. Verified live on Daniel Hooker vs
+// Salahdine Parnasse: types 7736/7737 at 4.77/1.175, where
+// 1/(1/5.03+1/33)=4.36 and 1/(1/1.196+1/33)=1.15 confirm the draw is folded
+// into both sides.
+func TestWin2WayFallback(t *testing.T) {
+	g := rawGame{
+		I: 742911339, O1: "Daniel Hooker", O2: "Salahdine Parnasse", SS: 2,
+		GE: []rawGroupedMarket{{
+			G: 8389, GS: 2456,
+			E: [][]rawFlatOutcome{
+				{{T: 7736, C: 4.77, G: 8389}},
+				{{T: 7737, C: 1.175, G: 8389}},
+			},
+		}},
+	}
+	d := normalizeGameFlat(g)
+	if len(d.Markets) != 1 {
+		t.Fatalf("markets = %d, want 1", len(d.Markets))
+	}
+	m := d.Markets[0]
+	if m.Name != "Win (2Way)" {
+		t.Errorf("market name = %q, want %q", m.Name, "Win (2Way)")
+	}
+	if len(m.Outcomes) != 2 {
+		t.Fatalf("outcomes = %d, want 2", len(m.Outcomes))
+	}
+	if m.Outcomes[0].Name != "W1" || m.Outcomes[1].Name != "W2" {
+		t.Errorf("outcome names = %q/%q, want W1/W2", m.Outcomes[0].Name, m.Outcomes[1].Name)
+	}
+}

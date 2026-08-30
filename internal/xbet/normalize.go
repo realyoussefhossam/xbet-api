@@ -80,6 +80,10 @@ var marketNames = map[int]string{
 	15: "Total Goals",
 	17: "Home Total",
 	62: "Both Teams To Score",
+	// 8389 = 2-way winner market (draw folded into both sides, e.g. MMA
+	// "Win (2Way)"). 1xbet's template dictionary has no entry for it yet;
+	// the odds identify it: 1/(1/o1 + 1/oX) and 1/(1/o2 + 1/oX).
+	8389: "Win (2Way)",
 }
 
 // outcomeLabels maps outcome type ids (E[].T) to base labels.
@@ -91,6 +95,10 @@ func outcomeLabel(t int, p float64) string {
 		return "X"
 	case 3:
 		return "2"
+	case 7736: // Win (2Way) - fighter 1
+		return "W1"
+	case 7737: // Win (2Way) - fighter 2
+		return "W2"
 	case 4:
 		return "1X"
 	case 5:
