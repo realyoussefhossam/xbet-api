@@ -486,3 +486,45 @@ func TestWin2WayFallback(t *testing.T) {
 		t.Errorf("outcome names = %q/%q, want W1/W2", m.Outcomes[0].Name, m.Outcomes[1].Name)
 	}
 }
+
+// TestMarketLockSemantics: market.Locked means the market is suspended
+// (ALL outcomes closed), not "any outcome is locked". 1xbet floors a dead
+// leg (DC 12 @ 1.001) and locks only that outcome while 1X/X2 stay
+// bettable — the market must remain open. Verified live: Castro-Montez
+// (1X+12 locked, X2 open at 8.15) and Hooker-Parnasse (12 locked only).
+func TestMarketLockSemantics(t *testing.T) {
+	// Partial lock: market open, outcome 5 locked.
+	g := rawGame{
+		I: 1, O1: "A", O2: "B", SS: 2,
+		E: []rawFlatOutcome{
+			{T: 4, C: 4.455, G: 8},
+			{T: 5, C: 1.001, G: 8, B: true},
+			{T: 6, C: 1.16, G: 8},
+		},
+	}
+	d := normalizeGameFlat(g)
+	m := d.Markets[0]
+	if m.Locked {
+		t.Error("partially locked market must stay open")
+	}
+	if !m.Outcomes[1].Locked {
+		t.Error("outcome 5 must stay locked")
+	}
+	if m.Outcomes[0].Locked || m.Outcomes[2].Locked {
+		t.Error("open outcomes must not be locked")
+	}
+
+	// Full lock: every outcome closed -> market suspended.
+	g2 := rawGame{
+		I: 2, O1: "C", O2: "D", SS: 2,
+		E: []rawFlatOutcome{
+			{T: 4, C: 2.1, G: 1, B: true},
+			{T: 5, C: 3.2, G: 1, B: true},
+			{T: 6, C: 3.4, G: 1, B: true},
+		},
+	}
+	d2 := normalizeGameFlat(g2)
+	if !d2.Markets[0].Locked {
+		t.Error("fully locked market must be suspended")
+	}
+}

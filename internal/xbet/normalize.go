@@ -249,10 +249,19 @@ func buildMarkets(E []rawFlatOutcome) []model.Market {
 				Odds:   float64(o.C),
 				Locked: o.B || o.Block != 0 || o.Blocked,
 			}
-			if out.Locked {
-				market.Locked = true
-			}
 			market.Outcomes = append(market.Outcomes, out)
+		}
+		// market.Locked means the market itself is suspended (all its
+		// outcomes closed), not "some outcome is locked". 1xbet floors a
+		// dead leg (e.g. DC 12 @ 1.001) and locks only that outcome while
+		// the rest stay bettable — flagging the whole market locked then
+		// kills perfectly good 1X/X2 prices downstream.
+		market.Locked = len(market.Outcomes) > 0
+		for _, o := range market.Outcomes {
+			if !o.Locked {
+				market.Locked = false
+				break
+			}
 		}
 		markets = append(markets, market)
 	}

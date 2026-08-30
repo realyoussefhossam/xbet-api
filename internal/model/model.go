@@ -61,6 +61,9 @@ type Outcome struct {
 }
 
 // Market is a group of outcomes (e.g. "Match Winner").
+// Locked means the market itself is suspended (all outcomes closed on the
+// line feed, or group-level "blocked" on the live feed). A single locked
+// outcome (e.g. a floored 1.001 leg) does NOT lock the market.
 type Market struct {
 	ID       int64     `json:"id"`
 	Name     string    `json:"name"`
