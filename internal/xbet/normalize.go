@@ -349,6 +349,12 @@ func normalizeLiveGame(g rawLiveGame) model.Event {
 		Status:     model.StatusLive,
 		RawStatus:  1,
 	}
+	if len(g.Opponent1.Opps) > 0 {
+		ev.HomeImage = g.Opponent1.Opps[0].Image
+	}
+	if len(g.Opponent2.Opps) > 0 {
+		ev.AwayImage = g.Opponent2.Opps[0].Image
+	}
 	if ts := int64(g.StartTs); ts > 0 {
 		ev.StartTime = time.Unix(ts, 0).UTC()
 	}

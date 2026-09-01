@@ -374,6 +374,12 @@ func TestGetResultGames(t *testing.T) {
 	if !containsStr(g.Score, "Wins") {
 		t.Fatalf("want winner in score, got %q", g.Score)
 	}
+	if !containsStr(g.HomeImage, "/sfiles/logo_teams/767ef093161e281b3fc0dcbb9388755a.png") {
+		t.Errorf("want absolute home image URL, got %q", g.HomeImage)
+	}
+	if !containsStr(g.AwayImage, "/sfiles/logo_teams/9bfcf7b6893e88fbbebf831b91b6c026.png") {
+		t.Errorf("want absolute away image URL, got %q", g.AwayImage)
+	}
 }
 
 // rules API fixtures

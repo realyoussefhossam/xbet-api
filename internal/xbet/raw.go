@@ -306,9 +306,19 @@ type rawLiveGame struct {
 	} `json:"liga"`
 	Opponent1 struct {
 		FullName string `json:"fullName"`
+		Opps     []struct {
+			ID    FlexInt `json:"id"`
+			Name  string  `json:"name"`
+			Image string  `json:"image"` // /sfiles/logo_teams/xxx.png
+		} `json:"opps"`
 	} `json:"opponent1"`
 	Opponent2 struct {
 		FullName string `json:"fullName"`
+		Opps     []struct {
+			ID    FlexInt `json:"id"`
+			Name  string  `json:"name"`
+			Image string  `json:"image"` // /sfiles/logo_teams/xxx.png
+		} `json:"opps"`
 	} `json:"opponent2"`
 	Scores      rawLiveScores  `json:"scores"`
 	EventGroups []rawLiveGroup `json:"eventGroups"`
@@ -389,6 +399,8 @@ type rawResultGame struct {
 	ChampName    string             `json:"champName"`
 	Opp1         string             `json:"opp1"`
 	Opp2         string             `json:"opp2"`
+	Opp1Images   []string           `json:"opp1Images"`
+	Opp2Images   []string           `json:"opp2Images"`
 	Score        string             `json:"score"` // multi-line: winner / round / method
 	DopInfo      string             `json:"dopInfo"`
 	HasSubGame   bool               `json:"hasSubGame"`

@@ -87,6 +87,8 @@ type Client struct {
 	jarMu    sync.Mutex
 	jars     map[string]http.CookieJar // per-host jars (cookies are host-scoped)
 	booted   map[string]bool           // hosts we've fetched the homepage for
+	hostMu   sync.Mutex
+	lastHost string                    // mirror that last served a request (for image URLs)
 }
 
 // ClientOptions configures a Client.
@@ -363,9 +365,40 @@ func (c *Client) GetLiveEvents(ctx context.Context, sportID, count int) ([]model
 		if sportID > 0 && int(g.Sport.ID) != sportID {
 			continue
 		}
-		out = append(out, normalizeLiveGame(g))
+		ev := normalizeLiveGame(g)
+		ev.HomeImage = c.absImage(ev.HomeImage)
+		ev.AwayImage = c.absImage(ev.AwayImage)
+		out = append(out, ev)
 	}
 	return out, nil
+}
+
+// setLastHost records the mirror that served the most recent successful
+// request, so image URLs can be built against a host known to work.
+func (c *Client) setLastHost(host string) {
+	c.hostMu.Lock()
+	c.lastHost = host
+	c.hostMu.Unlock()
+}
+
+// absImage turns a raw relative /sfiles path into an absolute URL on the
+// last-known-good mirror. Empty or already-absolute paths pass through.
+func (c *Client) absImage(path string) string {
+	if path == "" || strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
+		return path
+	}
+	c.hostMu.Lock()
+	host := c.lastHost
+	c.hostMu.Unlock()
+	if host == "" {
+		if hosts := c.pool.Hosts(); len(hosts) > 0 {
+			host = hosts[0]
+		}
+	}
+	if host == "" {
+		return path
+	}
+	return c.scheme + "://" + host + path
 }
 
 // GetLiveGame returns all markets for an in-play game.
@@ -404,6 +437,7 @@ func (c *Client) doV3(ctx context.Context, ep string, q orderedQuery, grIndex in
 			body, err := c.doHost(ctx, host, ep, q2)
 			if err == nil {
 				c.pool.ReportSuccess(host)
+				c.setLastHost(host)
 				return body, nil
 			}
 			lastErr = err
@@ -487,6 +521,7 @@ func (c *Client) do(ctx context.Context, ep string, q orderedQuery) ([]byte, err
 		body, err := c.doHost(ctx, host, ep, q)
 		if err == nil {
 			c.pool.ReportSuccess(host)
+			c.setLastHost(host)
 			return body, nil
 		}
 		lastErr = err
@@ -737,6 +772,12 @@ func (c *Client) GetResultGames(ctx context.Context, champID int, from, to int64
 			Home:      g.Opp1,
 			Away:      g.Opp2,
 			Score:     g.Score,
+		}
+		if len(g.Opp1Images) > 0 {
+			rg.HomeImage = c.absImage("/sfiles/logo_teams/" + g.Opp1Images[0])
+		}
+		if len(g.Opp2Images) > 0 {
+			rg.AwayImage = c.absImage("/sfiles/logo_teams/" + g.Opp2Images[0])
 		}
 		if ts := int64(g.DateStart); ts > 0 {
 			rg.StartTime = time.Unix(ts, 0).UTC()

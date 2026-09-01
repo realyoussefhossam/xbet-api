@@ -46,7 +46,9 @@ type Event struct {
 	RawStatus  int            `json:"raw_status"`
 	Score      map[string]int `json:"score,omitempty"` // {"home":..,"away":..}
 	MainOdds   *Odds          `json:"main_odds,omitempty"`
-	Locked     bool           `json:"locked,omitempty"` // betting suspended (live)
+	HomeImage  string         `json:"home_image,omitempty"` // absolute /sfiles URL (live feed only)
+	AwayImage  string         `json:"away_image,omitempty"`
+	Locked     bool           `json:"locked,omitempty"`     // betting suspended (live)
 }
 
 // IsLive reports whether the event is currently in play.
@@ -116,6 +118,8 @@ type ResultGame struct {
 	ChampName string          `json:"champ_name"`
 	Home      string          `json:"home"`
 	Away      string          `json:"away"`
+	HomeImage string          `json:"home_image,omitempty"` // absolute /sfiles URL
+	AwayImage string          `json:"away_image,omitempty"`
 	Score     string          `json:"score"` // multi-line result text
 	StartTime time.Time       `json:"start_time"`
 	SubGames  []ResultSubGame `json:"sub_games,omitempty"`
