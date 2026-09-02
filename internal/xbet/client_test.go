@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"xbet-api/internal/model"
 )
 
 // gz returns b gzip-compressed.
@@ -545,5 +547,25 @@ func TestRuleSubsections(t *testing.T) {
 		if ch.Subsections[i].ID < ch.Subsections[i-1].ID {
 			t.Fatalf("subsections not sorted at %d", i)
 		}
+	}
+}
+
+// TestExcludeChamps: exclude_league drops events by league id — matches the
+// site's UFC page which hides "Prospective fights" (1826608): 70 - 32 = 38.
+func TestExcludeChamps(t *testing.T) {
+	evs := []model.Event{
+		{ID: 1, LeagueID: 3059162}, // UFC FN
+		{ID: 2, LeagueID: 1826608}, // Prospective
+		{ID: 3, LeagueID: 3071223}, // Noche
+	}
+	got := excludeChamps(evs, "1826608")
+	if len(got) != 2 || got[0].ID != 1 || got[1].ID != 3 {
+		t.Fatalf("bad exclusion: %+v", got)
+	}
+	if got := excludeChamps(evs, ""); len(got) != 3 {
+		t.Fatalf("empty exclude must not filter: %+v", got)
+	}
+	if got := excludeChamps(evs, "bogus,1826608,"); len(got) != 2 {
+		t.Fatalf("dirty list must still filter: %+v", got)
 	}
 }

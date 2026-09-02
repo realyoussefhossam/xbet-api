@@ -182,11 +182,12 @@ func (c *Client) GetChamps(ctx context.Context, sportID int) ([]model.League, er
 
 // EventsParams are optional filters for GetEvents.
 type EventsParams struct {
-	Champs string // comma-separated league ids; empty = all
-	Count  int    // max events; default 50
-	Live   bool   // unused on the new gateway (LINE feed); kept for API compat
-	From   int64  // unix ts: earliest start (tsFrom)
-	To     int64  // unix ts: latest start (tsTo)
+	Champs        string // comma-separated league ids; empty = all
+	ExcludeChamps string // comma-separated league ids to drop (post-filter)
+	Count         int    // max events; default 50
+	Live          bool   // unused on the new gateway (LINE feed); kept for API compat
+	From          int64  // unix ts: earliest start (tsFrom)
+	To            int64  // unix ts: latest start (tsTo)
 }
 
 // GetAllEvents returns ALL events for a sport over the next maxDays days,
@@ -213,7 +214,33 @@ func (c *Client) GetAllEvents(ctx context.Context, sportID int, p EventsParams, 
 		}
 	}
 	sort.Slice(dedup, func(i, j int) bool { return dedup[i].StartTime.Before(dedup[j].StartTime) })
-	return dedup, nil
+	return excludeChamps(dedup, p.ExcludeChamps), nil
+}
+
+// excludeChamps drops events whose league id is in the comma-separated
+// exclude list. Used to match site pages that hide system champs, e.g.
+// "Prospective fights" (1826608) on the UFC page: 70 - 32 = 38, exactly
+// what the lite site shows.
+func excludeChamps(evs []model.Event, exclude string) []model.Event {
+	if exclude == "" {
+		return evs
+	}
+	drop := map[int]bool{}
+	for _, part := range strings.Split(exclude, ",") {
+		if n, err := strconv.Atoi(strings.TrimSpace(part)); err == nil && n > 0 {
+			drop[n] = true
+		}
+	}
+	if len(drop) == 0 {
+		return evs
+	}
+	out := make([]model.Event, 0, len(evs))
+	for _, e := range evs {
+		if !drop[e.LeagueID] {
+			out = append(out, e)
+		}
+	}
+	return out
 }
 
 // collectEvents fetches events in [from,to), subdividing windows that hit
@@ -281,7 +308,7 @@ func (c *Client) GetEvents(ctx context.Context, sportID int, p EventsParams) ([]
 		}
 		out = append(out, ev)
 	}
-	return out, nil
+	return excludeChamps(out, p.ExcludeChamps), nil
 }
 
 // GetGame returns a full event: all markets and odds, plus attached

@@ -4,6 +4,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,6 +18,10 @@ import (
 	"xbet-api/internal/model"
 	"xbet-api/internal/xbet"
 )
+
+// errInvalid marks a request-parameter error: the response is already
+// written, callers must return without double-writing.
+var errInvalid = errors.New("invalid parameter")
 
 // Fetcher abstracts the 1xbet client so handlers are testable.
 type Fetcher interface {
@@ -145,7 +150,8 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	}
 	q := r.URL.Query()
 	params := xbet.EventsParams{
-		Champs: q.Get("league"),
+		Champs:        q.Get("league"),
+		ExcludeChamps: q.Get("exclude_league"),
 	}
 	if c := q.Get("count"); c != "" {
 		n, err := strconv.Atoi(c)
@@ -184,7 +190,7 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	all := q.Get("all") == "true"
 	live := params.Live
 
-	key := fmt.Sprintf("events:%d:%s:%d:%t:%t:%t:%d:%d", sportID, params.Champs, params.Count, live, all, params.Live, params.From, params.To)
+	key := fmt.Sprintf("events:%d:%s:%s:%d:%t:%t:%t:%d:%d", sportID, params.Champs, params.ExcludeChamps, params.Count, live, all, params.Live, params.From, params.To)
 	v, err := s.events.GetOrLoad(key, func() (any, error) {
 		if live {
 			return s.fetcher.GetLiveEvents(r.Context(), sportID, params.Count)
@@ -285,20 +291,41 @@ func parseIDList(s string) ([]int, error) {
 
 // handleResultLive returns in-play games with scores (the results Live tab).
 func (s *Server) handleResultLive(w http.ResponseWriter, r *http.Request) {
-	count := 40
-	if c := r.URL.Query().Get("count"); c != "" {
-		if n, err := strconv.Atoi(c); err == nil && n > 0 {
-			count = n
-		}
-	}
-	v, err := s.events.GetOrLoad(fmt.Sprintf("live:all:%d", count), func() (any, error) {
-		return s.fetcher.GetLiveEvents(r.Context(), 0, count)
-	})
+	v, err := s.liveEvents(w, r)
 	if err != nil {
+		if errors.Is(err, errInvalid) {
+			return
+		}
 		writeErr(w, http.StatusBadGateway, fmt.Errorf("upstream: %w", err))
 		return
 	}
 	writeJSON(w, http.StatusOK, v)
+}
+
+// liveEvents serves /live/events and /results/live: the live feed, with
+// optional ?sport=N filtering and ?count=N sizing. Cache is per sport.
+func (s *Server) liveEvents(w http.ResponseWriter, r *http.Request) (any, error) {
+	sportID := 0
+	if v := r.URL.Query().Get("sport"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 0 {
+			writeErr(w, http.StatusBadRequest, fmt.Errorf("invalid sport: %q", v))
+			return nil, errInvalid
+		}
+		sportID = n
+	}
+	count := 40
+	if c := r.URL.Query().Get("count"); c != "" {
+		n, err := strconv.Atoi(c)
+		if err != nil || n <= 0 {
+			writeErr(w, http.StatusBadRequest, fmt.Errorf("invalid count: %q", c))
+			return nil, errInvalid
+		}
+		count = n
+	}
+	return s.events.GetOrLoad(fmt.Sprintf("live:%d:%d", sportID, count), func() (any, error) {
+		return s.fetcher.GetLiveEvents(r.Context(), sportID, count)
+	})
 }
 
 // handleZoneChamps lists champs with zone (detailed stats) games.
@@ -465,20 +492,13 @@ func writeLockSSE(w http.ResponseWriter, ev locks.Event) {
 }
 
 // handleLiveAll returns currently in-play events across all sports.
+// ?sport=N filters to one sport; ?count=N caps the feed size.
 func (s *Server) handleLiveAll(w http.ResponseWriter, r *http.Request) {
-	count := 40
-	if c := r.URL.Query().Get("count"); c != "" {
-		n, err := strconv.Atoi(c)
-		if err != nil || n <= 0 {
-			writeErr(w, http.StatusBadRequest, fmt.Errorf("invalid count: %q", c))
+	v, err := s.liveEvents(w, r)
+	if err != nil {
+		if errors.Is(err, errInvalid) {
 			return
 		}
-		count = n
-	}
-	v, err := s.events.GetOrLoad(fmt.Sprintf("live:all:%d", count), func() (any, error) {
-		return s.fetcher.GetLiveEvents(r.Context(), 0, count)
-	})
-	if err != nil {
 		writeErr(w, http.StatusBadGateway, fmt.Errorf("upstream: %w", err))
 		return
 	}
